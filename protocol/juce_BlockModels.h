@@ -40,6 +40,7 @@ struct BlockDataSheet
         if (serialNumber.isTouchBlock())        initialiseForControlBlockTouch();
         if (serialNumber.isSeaboardBlock())     initialiseForSeaboardBlock();
         if (serialNumber.isLumiKeysBlock())     initialiseForLumiKeysBlock();
+        if (serialNumber.isLightpadProBlock())  initialiseForLightpadProBlock();
     }
 
     Block::ConnectionPort convertPortIndexToConnectorPort (BlocksProtocol::ConnectorPort port) const noexcept
@@ -99,6 +100,26 @@ private:
 
         hasTouchSurface = true;
         programAndHeapSize = BlocksProtocol::padBlockProgramAndHeapSize;
+
+        addModeButton();
+    }
+
+    void initialiseForLightpadProBlock()
+    {
+        apiType = Block::Type::lightpadProBlock;
+
+        description = "Lightpad Pro BLOCK (4x4)";
+
+        widthUnits = 4;
+        heightUnits = 4;
+
+        lightGridWidth = 31;
+        lightGridHeight = 31;
+
+        addPorts (4, 4, 4, 4);
+
+        hasTouchSurface = true;
+        programAndHeapSize = BlocksProtocol::lightpadProBlockProgramAndHeapSize;
 
         addModeButton();
     }
@@ -252,10 +273,10 @@ private:
 
         defaultConfig.add ({ mode, 0, 0, 3, false,
                            "Color Mode", ConfigType::options,
-                           { "Multi-color Mode",
-                             "Single Color Mode",
-                             "Piano Mode",
-                             "Night Mode"
+                           { "Rainbow",
+                             "Single Color Scale",
+                             "Piano",
+                             "Night"
                            },
                            BlockConfigManager::playGroup });
 

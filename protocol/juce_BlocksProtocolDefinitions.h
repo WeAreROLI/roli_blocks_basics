@@ -20,6 +20,8 @@
   ==============================================================================
 */
 
+#pragma once
+
 namespace juce
 {
 namespace BlocksProtocol
@@ -185,7 +187,7 @@ struct BlockSerialNumber : public BlockStringData<16>
             if (c == 0)
                 return false;
 
-        return isAnyControlBlock() || isPadBlock() || isSeaboardBlock() || isLumiKeysBlock();
+        return isAnyControlBlock() || isPadBlock() || isSeaboardBlock() || isLumiKeysBlock() || isLightpadProBlock();
     }
 
     bool isPadBlock() const noexcept            { return hasPrefix ("LPB") || hasPrefix ("LPM"); }
@@ -195,6 +197,7 @@ struct BlockSerialNumber : public BlockStringData<16>
     bool isTouchBlock() const noexcept          { return hasPrefix ("TCB"); }
     bool isSeaboardBlock() const noexcept       { return hasPrefix ("SBB"); }
     bool isLumiKeysBlock() const noexcept       { return hasPrefix ("LKB"); }
+    bool isLightpadProBlock() const noexcept    { return hasPrefix ("LPX"); }
 
     bool isAnyControlBlock() const noexcept     { return isLiveBlock() || isLoopBlock() || isDevCtrlBlock() || isTouchBlock(); }
 
@@ -347,11 +350,43 @@ enum ConfigItemId
     user28              = 92,
     user29              = 93,
     user30              = 94,
-    user31              = 95
+    user31              = 95,
+    // Mode Config 0
+    mode0_colorType     = 100,
+    mode0_midiMode      = 101,
+    mode0_pitchEnable   = 102,
+    mode0_pressureEnable = 103,
+    mode0_showScale     = 104,
+    mode0_globalColour  = 105,
+    mode0_rootColour    = 106,
+    // Mode Config 1
+    mode1_colorType     = 107,
+    mode1_midiMode      = 108,
+    mode1_pitchEnable   = 109,
+    mode1_pressureEnable = 110,
+    mode1_showScale     = 111,
+    mode1_globalColour  = 112,
+    mode1_rootColour    = 113,
+    // Mode Config 2
+    mode2_colorType     = 114,
+    mode2_midiMode      = 115,
+    mode2_pitchEnable   = 116,
+    mode2_pressureEnable = 117,
+    mode2_showScale     = 118,
+    mode2_globalColour  = 119,
+    mode2_rootColour    = 120,
+    // Mode Config 3
+    mode3_colorType     = 121,
+    mode3_midiMode      = 122,
+    mode3_pitchEnable   = 123,
+    mode3_pressureEnable = 124,
+    mode3_showScale     = 125,
+    mode3_globalColour  = 126,
+    mode3_rootColour    = 127,
+    maxConfigIndex      = 128
 };
 
 static constexpr uint8 numberOfUserConfigs = 32;
-static constexpr uint8 maxConfigIndex = uint8 (ConfigItemId::user0) + numberOfUserConfigs;
 
 static constexpr uint8 configUserConfigNameLength = 32;
 static constexpr uint8 configMaxOptions = 16;
@@ -468,6 +503,9 @@ static constexpr uint32 apiModeHostPingTimeoutMs = 5000;
 
 static constexpr uint32 padBlockProgramAndHeapSize = 7200;
 static constexpr uint32 padBlockStackSize = 800;
+
+static constexpr uint32 lightpadProBlockProgramAndHeapSize = 16384;
+static constexpr uint32 lightpadProBlockStackSize = 2048;
 
 static constexpr uint32 controlBlockProgramAndHeapSize = 3000;
 static constexpr uint32 controlBlockStackSize = 800;
@@ -605,8 +643,12 @@ static constexpr const char* ledProgramLittleFootFunctions[] =
     "setUseDefaultKeyHandler/vb",
     "setUseDefaultKeyHandler/vbb",
 
+    "setLED/viii",
+    "blendLED/viii",
     nullptr
 };
+
+JUCE_COMPILER_WARNING ("Remove before release! the old setLED and blendLED functions should be removed")
 
 } // namespace BlocksProtocol
 } // namespace juce

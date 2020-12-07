@@ -220,10 +220,7 @@ public:
     bool sendMessageToDevice (const PacketBuilder& builder)
     {
         if (detector != nullptr)
-        {
-            lastMessageSendTime = Time::getCurrentTime();
             return detector->sendMessageToDevice (uid, builder);
-        }
 
         return false;
     }
@@ -309,7 +306,7 @@ public:
         stopTimer();
 
         programSize = 0;
-        isProgramLoaded = shouldSaveProgramAsDefault = false;
+        isProgramLoaded = false;
 
         if (program == nullptr)
         {
@@ -337,7 +334,7 @@ public:
         const auto legacyProgramChangeConfigIndex = getMaxConfigIndex();
         handleConfigItemChanged ({ legacyProgramChangeConfigIndex }, legacyProgramChangeConfigIndex);
 
-        shouldSaveProgramAsDefault = persistency == ProgramPersistency::setAsDefault;
+        programPersistency = persistency;
         startTimer (20);
 
         return Result::ok();
@@ -382,7 +379,7 @@ public:
             isProgramLoaded = true;
             stopTimer();
 
-            if (shouldSaveProgramAsDefault)
+            if (programPersistency == ProgramPersistency::setAsDefault)
                 doSaveProgramAsDefault();
 
             programLoadedListeners.call([&] (ProgramLoadedListener& l) { l.handleProgramLoaded (*this); });
@@ -395,7 +392,7 @@ public:
 
     void saveProgramAsDefault() override
     {
-        shouldSaveProgramAsDefault = true;
+        programPersistency = ProgramPersistency::setAsDefault;
 
         if (! isTimerRunning() && isProgramLoaded)
             doSaveProgramAsDefault();
@@ -403,7 +400,7 @@ public:
 
     void resetProgramToDefault() override
     {
-        if (! shouldSaveProgramAsDefault)
+        if (programPersistency == ProgramPersistency::setAsTemp)
             setProgram (nullptr);
 
         sendCommandMessage (BlocksProtocol::endAPIMode);
@@ -482,7 +479,7 @@ public:
 
     void pingFromDevice()
     {
-        lastMessageReceiveTime = Time::getCurrentTime();
+        lastPingReceiveTime = Time::getCurrentTime();
     }
 
     MIDIDeviceConnection* getDeviceConnection()
@@ -536,8 +533,11 @@ public:
 
         remoteHeap.sendChanges (*this, false);
 
-        if (lastMessageSendTime < Time::getCurrentTime() - getPingInterval())
+        if (lastPingSendTime < Time::getCurrentTime() - getPingInterval())
+        {
+            lastPingSendTime = Time::getCurrentTime();
             sendCommandMessage (BlocksProtocol::ping);
+        }
     }
 
     RelativeTime getPingInterval()
@@ -685,7 +685,7 @@ public:
     RemoteHeapType remoteHeap;
 
     WeakReference<Detector> detector;
-    Time lastMessageSendTime, lastMessageReceiveTime;
+    Time lastPingSendTime, lastPingReceiveTime;
 
     BlockConfigManager config;
 
@@ -711,7 +711,6 @@ private:
     friend Detector;
 
     bool isProgramLoaded = false;
-    bool shouldSaveProgramAsDefault = false;
     bool hasBeenPowerCycled = false;
 
     void initialiseDeviceIndexAndConnection()

@@ -71,7 +71,7 @@ struct BlockConfigManager
     void setDeviceIndex (TopologyIndex newDeviceIndex)                       { deviceIndex = newDeviceIndex; }
     void setDeviceComms (PhysicalTopologySource::DeviceConnection* newConn)  { deviceConnection = newConn; }
 
-    static constexpr uint32 numConfigItems = 69;
+    static constexpr uint32 numConfigItems = 97;
 
     static constexpr const char* midiSettingsGroup = "MIDI Settings";
     static constexpr const char* pitchGroup = "Pitch";
@@ -79,6 +79,10 @@ struct BlockConfigManager
     static constexpr const char* sensitivityGroup = "Sensitivity";
     static constexpr const char* rhythmGroup = "Rhythm";
     static constexpr const char* coloursGroup = "Colors";
+    static constexpr const char* mode0Group = "Mode 1";
+    static constexpr const char* mode1Group = "Mode 2";
+    static constexpr const char* mode2Group = "Mode 3";
+    static constexpr const char* mode3Group = "Mode 4";
 
     ConfigDescription configList[numConfigItems] =
     {
@@ -172,7 +176,47 @@ struct BlockConfigManager
         { user28,               0,    0,      127,          false,  {},                     ConfigType::integer,    {},               {} },
         { user29,               0,    0,      127,          false,  {},                     ConfigType::integer,    {},               {} },
         { user30,               0,    0,      127,          false,  {},                     ConfigType::integer,    {},               {} },
-        { user31,               0,    0,      127,          false,  {},                     ConfigType::integer,    {},               {} }
+        { user31,               0,    0,      127,          false,  {},                     ConfigType::integer,    {},               {} },
+
+        { mode0_colorType,      0,    0,      4,            false,  "Color Mode",           ConfigType::options,    {"Pro", "User", "Piano", "Night",
+                                                                                                                     "Rainbow"},      mode0Group },
+        { mode0_midiMode,       0,    0,      1,            false,  "MIDI Settings",        ConfigType::options,    { "Single Channel",
+                                                                                                                    "MPE" },          mode0Group },
+        { mode0_pitchEnable,    0,    0,      1,            false,  "Per Key Pitch",        ConfigType::boolean,    {},               mode0Group },
+        { mode0_pressureEnable, 0,    0,      1,            false,  "Per Key Pressure",     ConfigType::boolean,    {},               mode0Group },
+        { mode0_showScale,      0,    0,      1,            false,  "Show Scales",          ConfigType::boolean,    {},               mode0Group },
+        { mode0_globalColour, INT32_MIN, INT32_MIN, INT32_MAX, false,  "Global Key Color",  ConfigType::colour,     {},               mode0Group },
+        { mode0_rootColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color",    ConfigType::colour,     {},               mode0Group },
+
+        { mode1_colorType,      0,    0,      4,            false,  "Color Mode",           ConfigType::options,    {"Pro", "User", "Piano", "Night",
+                                                                                                                     "Rainbow"},      mode1Group },
+        { mode1_midiMode,       0,    0,      1,            false,  "MIDI Settings",        ConfigType::options,    { "Single Channel",
+                                                                                                                    "MPE" },          mode1Group },
+        { mode1_pitchEnable,    0,    0,      1,            false,  "Per Key Pitch",        ConfigType::boolean,    {},               mode1Group },
+        { mode1_pressureEnable, 0,    0,      1,            false,  "Per Key Pressure",     ConfigType::boolean,    {},               mode1Group },
+        { mode1_showScale,      0,    0,      1,            false,  "Show Scales",          ConfigType::boolean,    {},               mode1Group },
+        { mode1_globalColour, INT32_MIN, INT32_MIN, INT32_MAX, false,  "Global Key Color",  ConfigType::colour,     {},               mode1Group },
+        { mode1_rootColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color",    ConfigType::colour,     {},               mode1Group },
+
+        { mode2_colorType,      0,    0,      4,            false,  "Color Mode",           ConfigType::options,    {"Pro", "User", "Piano", "Night",
+                                                                                                                     "Rainbow"},      mode2Group },
+        { mode2_midiMode,       0,    0,      1,            false,  "MIDI Settings",        ConfigType::options,    { "Single Channel",
+                                                                                                                    "MPE" },          mode2Group },
+        { mode2_pitchEnable,    0,    0,      1,            false,  "Per Key Pitch",        ConfigType::boolean,    {},               mode2Group },
+        { mode2_pressureEnable, 0,    0,      1,            false,  "Per Key Pressure",     ConfigType::boolean,    {},               mode2Group },
+        { mode2_showScale,      0,    0,      1,            false,  "Show Scales",          ConfigType::boolean,    {},               mode2Group },
+        { mode2_globalColour, INT32_MIN, INT32_MIN, INT32_MAX, false,  "Global Key Color",  ConfigType::colour,     {},               mode2Group },
+        { mode2_rootColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color",    ConfigType::colour,     {},               mode2Group },
+
+        { mode3_colorType,      0,    0,      4,            false,  "Color Mode",           ConfigType::options,    {"Pro", "User", "Piano", "Night",
+                                                                                                                     "Rainbow"},      mode3Group },
+        { mode3_midiMode,       0,    0,      1,            false,  "MIDI Settings",        ConfigType::options,    { "Single Channel",
+                                                                                                                    "MPE" },          mode3Group },
+        { mode3_pitchEnable,    0,    0,      1,            false,  "Per Key Pitch",        ConfigType::boolean,    {},               mode3Group },
+        { mode3_pressureEnable, 0,    0,      1,            false,  "Per Key Pressure",     ConfigType::boolean,    {},               mode3Group },
+        { mode3_showScale,      0,    0,      1,            false,  "Show Scales",          ConfigType::boolean,    {},               mode3Group },
+        { mode3_globalColour, INT32_MIN, INT32_MIN, INT32_MAX, false,  "Global Key Color",  ConfigType::colour,     {},               mode3Group },
+        { mode3_rootColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color",    ConfigType::colour,     {},               mode3Group }
     };
 
     //==============================================================================
@@ -278,6 +322,11 @@ struct BlockConfigManager
     {
         for (auto& i : configList)
             i.isActive = false;
+    }
+
+    inline bool isUserConfigID (ConfigItemId id)
+    {
+        return id >= ConfigItemId::user0 && id <= ConfigItemId::user31;
     }
 
     //==============================================================================
