@@ -156,13 +156,13 @@ bool BlocksVersion::operator>= (const BlocksVersion& other) const
 
 //==============================================================================
 //==============================================================================
-#if JUCE_UNIT_TESTS
+#if ROLI_UNIT_TESTS
 
-class BlocksVersionUnitTests  : public UnitTest
+class BlocksVersionUnitTests  : public juce::UnitTest
 {
 public:
     BlocksVersionUnitTests()
-        : UnitTest ("BlocksVersionUnitTests", UnitTestCategories::blocks)
+        : UnitTest ("BlocksVersionUnitTests", "BLOCKS")
     {}
 
     void runTest() override
