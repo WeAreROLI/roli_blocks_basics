@@ -30,9 +30,9 @@
  description:      Blocks application to draw shapes.
 
  dependencies:     juce_audio_basics, juce_audio_devices, juce_audio_formats,
-                   juce_audio_processors, juce_audio_utils, juce_blocks_basics,
+                   juce_audio_processors, juce_audio_utils,
                    juce_core, juce_data_structures, juce_events, juce_graphics,
-                   juce_gui_basics, juce_gui_extra
+                   juce_gui_basics, juce_gui_extra, roli_blocks_basics
  exporters:        xcode_mac, vs2019, linux_make, xcode_iphone
 
  moduleFlags:      JUCE_STRICT_REFCOUNTEDPOINTER=1
@@ -202,15 +202,15 @@ struct ColourGrid
         {
             for (auto j = 0; j < numRows; ++j)
             {
-                DrumPadGridProgram::GridFill fill;
+                roli::DrumPadGridProgram::GridFill fill;
                 Colour colourToUse = colourArray.getUnchecked (counter);
 
                 fill.colour = colourToUse.withBrightness (colourToUse == currentColour ? 1.0f : 0.1f);
 
                 if (colourToUse == Colours::black)
-                    fill.fillType = DrumPadGridProgram::GridFill::FillType::hollow;
+                    fill.fillType = roli::DrumPadGridProgram::GridFill::FillType::hollow;
                 else
-                    fill.fillType = DrumPadGridProgram::GridFill::FillType::filled;
+                    fill.fillType = roli::DrumPadGridProgram::GridFill::FillType::filled;
 
                 gridFillArray.add (fill);
 
@@ -244,7 +244,7 @@ struct ColourGrid
     //==============================================================================
     int numColumns, numRows;
 
-    Array<DrumPadGridProgram::GridFill> gridFillArray;
+    Array<roli::DrumPadGridProgram::GridFill> gridFillArray;
 
     Array<Colour> colourArray = { Colours::white, Colours::red, Colours::green,
                                   Colours::blue, Colours::hotpink, Colours::orange,
@@ -261,9 +261,9 @@ struct ColourGrid
     The main component
 */
 class BlocksDrawingDemo   : public Component,
-                            public TopologySource::Listener,
-                            private TouchSurface::Listener,
-                            private ControlButton::Listener,
+                            public roli::TopologySource::Listener,
+                            private roli::TouchSurface::Listener,
+                            private roli::ControlButton::Listener,
                             private DrawableLightpadComponent::Listener,
                             private Timer
 {
@@ -387,7 +387,7 @@ public:
         for (auto b : blocks)
         {
             // Find the first Lightpad
-            if (b->getType() == Block::Type::lightPadBlock)
+            if (b->getType() == roli::Block::Type::lightPadBlock)
             {
                 activeBlock = b;
 
@@ -421,7 +421,7 @@ public:
 private:
     //==============================================================================
     /** Overridden from TouchSurface::Listener. Called when a Touch is received on the Lightpad */
-    void touchChanged (TouchSurface&, const TouchSurface::Touch& touch) override
+    void touchChanged (roli::TouchSurface&, const roli::TouchSurface::Touch& touch) override
     {
         // Translate X and Y touch events to LED indexes
         auto xLed = roundToInt (touch.x * scaleX);
@@ -447,10 +447,10 @@ private:
     }
 
     /** Overridden from ControlButton::Listener. Called when a button on the Lightpad is pressed */
-    void buttonPressed (ControlButton&, Block::Timestamp) override {}
+    void buttonPressed (roli::ControlButton&, roli::Block::Timestamp) override {}
 
     /** Overridden from ControlButton::Listener. Called when a button on the Lightpad is released */
-    void buttonReleased (ControlButton&, Block::Timestamp) override
+    void buttonReleased (roli::ControlButton&, roli::Block::Timestamp) override
     {
         if (currentMode == canvas)
         {
@@ -507,18 +507,18 @@ private:
     }
 
     /** Sets the LEDGrid Program for the selected mode */
-    void setLEDProgram (Block& block)
+    void setLEDProgram (roli::Block& block)
     {
         if (currentMode == canvas)
         {
-            block.setProgram (std::make_unique<BitmapLEDProgram>(block));
+            block.setProgram (std::make_unique<roli::BitmapLEDProgram>(block));
 
             // Redraw any previously drawn LEDs
             redrawLEDs();
         }
         else if (currentMode == colourPalette)
         {
-            block.setProgram (std::make_unique <DrumPadGridProgram>(block));
+            block.setProgram (std::make_unique <roli::DrumPadGridProgram>(block));
 
             // Setup the grid layout
             if (auto* program = getPaletteProgram())
@@ -620,18 +620,18 @@ private:
     }
 
     //==============================================================================
-    BitmapLEDProgram* getCanvasProgram()
+    roli::BitmapLEDProgram* getCanvasProgram()
     {
         if (activeBlock != nullptr)
-            return dynamic_cast<BitmapLEDProgram*> (activeBlock->getProgram());
+            return dynamic_cast<roli::BitmapLEDProgram*> (activeBlock->getProgram());
 
         return nullptr;
     }
 
-    DrumPadGridProgram* getPaletteProgram()
+    roli::DrumPadGridProgram* getPaletteProgram()
     {
         if (activeBlock != nullptr)
-            return dynamic_cast<DrumPadGridProgram*> (activeBlock->getProgram());
+            return dynamic_cast<roli::DrumPadGridProgram*> (activeBlock->getProgram());
 
         return nullptr;
     }
@@ -676,8 +676,8 @@ private:
 
     //==============================================================================
     ColourGrid layout { 3, 3 };
-    PhysicalTopologySource topologySource;
-    Block::Ptr activeBlock;
+    roli::PhysicalTopologySource topologySource;
+    roli::Block::Ptr activeBlock;
 
     float scaleX = 0.0f;
     float scaleY = 0.0f;

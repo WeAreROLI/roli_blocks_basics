@@ -30,9 +30,9 @@
  description:      Blocks synthesiser application.
 
  dependencies:     juce_audio_basics, juce_audio_devices, juce_audio_formats,
-                   juce_audio_processors, juce_audio_utils, juce_blocks_basics,
+                   juce_audio_processors, juce_audio_utils,
                    juce_core, juce_data_structures, juce_events, juce_graphics,
-                   juce_gui_basics, juce_gui_extra
+                   juce_gui_basics, juce_gui_extra, roli_blocks_basics
  exporters:        xcode_mac, vs2019, linux_make, xcode_iphone
 
  moduleFlags:      JUCE_STRICT_REFCOUNTEDPOINTER=1
@@ -371,10 +371,10 @@ private:
 /**
     A Program to draw moving waveshapes onto the LEDGrid
 */
-class WaveshapeProgram : public Block::Program
+class WaveshapeProgram : public roli::Block::Program
 {
 public:
-    WaveshapeProgram (Block& b) : Program (b) {}
+    WaveshapeProgram (roli::Block& b) : Program (b) {}
 
     /** Sets the waveshape type to display on the grid */
     void setWaveshapeType (uint8 type)
@@ -550,14 +550,14 @@ struct SynthGrid
         {
             for (auto j = 0; j < numColumns; ++j)
             {
-                DrumPadGridProgram::GridFill fill;
+                roli::DrumPadGridProgram::GridFill fill;
 
                 auto padNum = (i * 5) + j;
 
                 fill.colour =  notes.contains (padNum) ? baseGridColour
                                                        : tonics.contains (padNum) ? Colours::white
                                                                                   : Colours::black;
-                fill.fillType = DrumPadGridProgram::GridFill::FillType::gradient;
+                fill.fillType = roli::DrumPadGridProgram::GridFill::FillType::gradient;
                 gridFillArray.add (fill);
             }
         }
@@ -575,7 +575,7 @@ struct SynthGrid
     int numColumns, numRows;
     float width, height;
 
-    Array<DrumPadGridProgram::GridFill> gridFillArray;
+    Array<roli::DrumPadGridProgram::GridFill> gridFillArray;
     Colour baseGridColour = Colours::green;
     Colour touchColour    = Colours::red;
 
@@ -591,9 +591,9 @@ struct SynthGrid
     The main component
 */
 class BlocksSynthDemo   : public Component,
-                          public TopologySource::Listener,
-                          private TouchSurface::Listener,
-                          private ControlButton::Listener,
+                          public roli::TopologySource::Listener,
+                          private roli::TouchSurface::Listener,
+                          private roli::ControlButton::Listener,
                           private Timer
 {
 public:
@@ -649,7 +649,7 @@ public:
         for (auto b : blocks)
         {
             // Find the first Lightpad
-            if (b->getType() == Block::Type::lightPadBlock)
+            if (b->getType() == roli::Block::Type::lightPadBlock)
             {
                 activeBlock = b;
 
@@ -678,7 +678,7 @@ public:
 
 private:
     /** Overridden from TouchSurface::Listener. Called when a Touch is received on the Lightpad */
-    void touchChanged (TouchSurface&, const TouchSurface::Touch& touch) override
+    void touchChanged (roli::TouchSurface&, const roli::TouchSurface::Touch& touch) override
     {
         if (currentMode == waveformSelectionMode && touch.isTouchStart && allowTouch)
         {
@@ -741,10 +741,10 @@ private:
     }
 
     /** Overridden from ControlButton::Listener. Called when a button on the Lightpad is pressed */
-    void buttonPressed (ControlButton&, Block::Timestamp) override {}
+    void buttonPressed (roli::ControlButton&, roli::Block::Timestamp) override {}
 
     /** Overridden from ControlButton::Listener. Called when a button on the Lightpad is released */
-    void buttonReleased (ControlButton&, Block::Timestamp) override
+    void buttonReleased (roli::ControlButton&, roli::Block::Timestamp) override
     {
         // Turn any active synthesiser notes off
         audio.allNotesOff();
@@ -780,7 +780,7 @@ private:
     }
 
     /** Sets the LEDGrid Program for the selected mode */
-    void setLEDProgram (Block& block)
+    void setLEDProgram (roli::Block& block)
     {
         if (currentMode == waveformSelectionMode)
         {
@@ -797,7 +797,7 @@ private:
         else if (currentMode == playMode)
         {
             // Set the LEDGrid program
-            auto error = block.setProgram (std::make_unique<DrumPadGridProgram>(block));
+            auto error = block.setProgram (std::make_unique<roli::DrumPadGridProgram>(block));
 
             if (error.failed())
             {
@@ -815,10 +815,10 @@ private:
     void timerCallback() override { allowTouch = true; }
 
     //==============================================================================
-    DrumPadGridProgram* getGridProgram()
+    roli::DrumPadGridProgram* getGridProgram()
     {
         if (activeBlock != nullptr)
-            return dynamic_cast<DrumPadGridProgram*> (activeBlock->getProgram());
+            return dynamic_cast<roli::DrumPadGridProgram*> (activeBlock->getProgram());
 
         return nullptr;
     }
@@ -844,8 +844,8 @@ private:
     Audio audio;
 
     SynthGrid layout { 5, 5 };
-    PhysicalTopologySource topologySource;
-    Block::Ptr activeBlock;
+    roli::PhysicalTopologySource topologySource;
+    roli::Block::Ptr activeBlock;
 
     Array<Time> touchMessageTimesInLastSecond;
 

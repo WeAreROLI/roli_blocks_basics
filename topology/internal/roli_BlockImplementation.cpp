@@ -219,7 +219,7 @@ public:
     {
         if (detector != nullptr)
         {
-            lastMessageSendTime = Time::getCurrentTime();
+            lastMessageSendTime = juce::Time::getCurrentTime();
             return detector->sendMessageToDevice (uid, builder);
         }
 

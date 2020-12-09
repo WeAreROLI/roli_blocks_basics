@@ -30,9 +30,9 @@
  description:      Application to monitor Blocks devices.
 
  dependencies:     juce_audio_basics, juce_audio_devices, juce_audio_formats,
-                   juce_audio_processors, juce_audio_utils, juce_blocks_basics,
+                   juce_audio_processors, juce_audio_utils,
                    juce_core, juce_data_structures, juce_events, juce_graphics,
-                   juce_gui_basics, juce_gui_extra
+                   juce_gui_basics, juce_gui_extra, roli_blocks_basics
  exporters:        xcode_mac, vs2019, linux_make, xcode_iphone
 
  moduleFlags:      JUCE_STRICT_REFCOUNTEDPOINTER=1
@@ -55,12 +55,12 @@
 */
 class BlockComponent : public Component,
                        public SettableTooltipClient,
-                       private TouchSurface::Listener,
-                       private ControlButton::Listener,
+                       private roli::TouchSurface::Listener,
+                       private roli::ControlButton::Listener,
                        private Timer
 {
 public:
-    BlockComponent (Block::Ptr blockToUse)
+    BlockComponent (roli::Block::Ptr blockToUse)
         : block (blockToUse)
     {
         updateStatsAndTooltip();
@@ -75,10 +75,10 @@ public:
 
         // If this is a Lightpad then set the grid program to be blank
         if (block->getLEDGrid() != nullptr)
-            block->setProgram (std::make_unique<BitmapLEDProgram>(*block));
+            block->setProgram (std::make_unique<roli::BitmapLEDProgram>(*block));
 
         // If this is a Lightpad then redraw it at 25Hz
-        if (block->getType() == Block::lightPadBlock)
+        if (block->getType() == roli::Block::lightPadBlock)
             startTimerHz (25);
 
         // Make sure the component can't go offscreen if it is draggable
@@ -115,28 +115,28 @@ public:
     void paint (Graphics&) override = 0;
 
     /** Subclasses can override this to receive button down events from the Block */
-    virtual void handleButtonPressed  (ControlButton::ButtonFunction, uint32) {}
+    virtual void handleButtonPressed  (roli::ControlButton::ButtonFunction, uint32) {}
 
     /** Subclasses can override this to receive button up events from the Block */
-    virtual void handleButtonReleased (ControlButton::ButtonFunction, uint32) {}
+    virtual void handleButtonReleased (roli::ControlButton::ButtonFunction, uint32) {}
 
     /** Subclasses can override this to receive touch events from the Block */
-    virtual void handleTouchChange (TouchSurface::Touch) {}
+    virtual void handleTouchChange (roli::TouchSurface::Touch) {}
 
     /** Subclasses can override this to battery level updates from the Block */
     virtual void handleBatteryLevelUpdate (float) {}
 
     /** The Block object that this class represents */
-    Block::Ptr block;
+    roli::Block::Ptr block;
 
     //==============================================================================
     /** Returns an integer index corresponding to a physical position on the hardware
         for each type of Control Block. */
-    static int controlButtonFunctionToIndex (ControlButton::ButtonFunction f)
+    static int controlButtonFunctionToIndex (roli::ControlButton::ButtonFunction f)
     {
-        using CB = ControlButton;
+        using CB = roli::ControlButton;
 
-        static Array<ControlButton::ButtonFunction> map[] =
+        static Array<CB::ButtonFunction> map[] =
         {
             { CB::mode,     CB::button0,  CB::velocitySensitivity },
             { CB::volume,   CB::button1,  CB::glideSensitivity    },
@@ -157,9 +157,9 @@ public:
         return -1;
     }
 
-    Point<float> getOffsetForPort (Block::ConnectionPort port)
+    Point<float> getOffsetForPort (roli::Block::ConnectionPort port)
     {
-        using e = Block::ConnectionPort::DeviceEdge;
+        using e = roli::Block::ConnectionPort::DeviceEdge;
 
         switch (rotation)
         {
@@ -251,13 +251,13 @@ private:
     void timerCallback() override   { repaint(); }
 
     /** Overridden from TouchSurface::Listener */
-    void touchChanged (TouchSurface&, const TouchSurface::Touch& t) override { handleTouchChange (t); }
+    void touchChanged (roli::TouchSurface&, const roli::TouchSurface::Touch& t) override { handleTouchChange (t); }
 
     /** Overridden from ControlButton::Listener */
-    void buttonPressed  (ControlButton& b, Block::Timestamp t) override      { handleButtonPressed  (b.getType(), t); }
+    void buttonPressed  (roli::ControlButton& b, roli::Block::Timestamp t) override      { handleButtonPressed  (b.getType(), t); }
 
     /** Overridden from ControlButton::Listener */
-    void buttonReleased (ControlButton& b, Block::Timestamp t) override      { handleButtonReleased (b.getType(), t); }
+    void buttonReleased (roli::ControlButton& b, roli::Block::Timestamp t) override      { handleButtonReleased (b.getType(), t); }
 
     /** Overridden from MouseListener. Prepares the master Block component for dragging. */
     void mouseDown (const MouseEvent& e) override
@@ -289,7 +289,7 @@ private:
 class LightpadComponent   : public BlockComponent
 {
 public:
-    LightpadComponent (Block::Ptr blockToUse)
+    LightpadComponent (roli::Block::Ptr blockToUse)
         : BlockComponent (blockToUse)
     {}
 
@@ -334,7 +334,7 @@ public:
         }
     }
 
-    void handleTouchChange (TouchSurface::Touch touch) override { touches.updateTouch (touch); }
+    void handleTouchChange (roli::TouchSurface::Touch touch) override { touches.updateTouch (touch); }
 
 private:
     /** An Array of colours to use for touches */
@@ -347,7 +347,7 @@ private:
                                   Colours::mediumpurple };
 
     /** A list of current Touch events */
-    TouchList<TouchSurface::Touch> touches;
+    roli::TouchList<roli::TouchSurface::Touch> touches;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LightpadComponent)
 };
@@ -360,7 +360,7 @@ private:
 class ControlBlockComponent   : public BlockComponent
 {
 public:
-    ControlBlockComponent (Block::Ptr blockToUse)
+    ControlBlockComponent (roli::Block::Ptr blockToUse)
         : BlockComponent (blockToUse),
           numLeds (block->getLEDRow()->getNumLEDs())
     {
@@ -429,12 +429,12 @@ public:
         g.fillRoundedRectangle (r, r.getWidth() / 20.0f);
     }
 
-    void handleButtonPressed  (ControlButton::ButtonFunction function, uint32) override
+    void handleButtonPressed  (roli::ControlButton::ButtonFunction function, uint32) override
     {
         displayButtonInteraction (controlButtonFunctionToIndex (function), true);
     }
 
-    void handleButtonReleased (ControlButton::ButtonFunction function, uint32) override
+    void handleButtonReleased (roli::ControlButton::ButtonFunction function, uint32) override
     {
         displayButtonInteraction (controlButtonFunctionToIndex (function), false);
     }
@@ -590,7 +590,7 @@ private:
     The main component where the Block components will be displayed
 */
 class BlocksMonitorDemo   : public Component,
-                            public TopologySource::Listener,
+                            public roli::TopologySource::Listener,
                             private Timer
 {
 public:
@@ -769,15 +769,15 @@ public:
 
 private:
     /** Creates a BlockComponent object for a new Block and adds it to the content component */
-    BlockComponent* createBlockComponent (Block::Ptr newBlock)
+    BlockComponent* createBlockComponent (roli::Block::Ptr newBlock)
     {
         auto type = newBlock->getType();
 
-        if (type == Block::lightPadBlock)
+        if (type == roli::Block::lightPadBlock)
             return new LightpadComponent (newBlock);
 
-        if (type == Block::loopBlock || type == Block::liveBlock
-            || type == Block::touchBlock || type == Block::developerControlBlock)
+        if (type == roli::Block::loopBlock || type == roli::Block::liveBlock
+            || type == roli::Block::touchBlock || type == roli::Block::developerControlBlock)
             return new ControlBlockComponent (newBlock);
 
         // Should only be connecting a Lightpad or Control Block!
@@ -793,7 +793,7 @@ private:
     }
 
     /** Calculates the position and rotation of each connected Block relative to the master Block */
-    void positionBlocks (BlockTopology topology)
+    void positionBlocks (roli::BlockTopology topology)
     {
         if (masterBlockComponent == nullptr)
             return;
@@ -804,7 +804,7 @@ private:
         auto maxLoops = 50;
 
         // Store all the connections to the master Block
-        Array<BlockDeviceConnection> masterBlockConnections;
+        Array<roli::BlockDeviceConnection> masterBlockConnections;
         for (auto connection : topology.connections)
             if (connection.device1 == masterBlockComponent->block->uid || connection.device2 == masterBlockComponent->block->uid)
                 masterBlockConnections.add (connection);
@@ -875,7 +875,7 @@ private:
                 for (auto blockComponent : unpositionedBlocks)
                 {
                     // Store all the connections to this Block
-                    Array<BlockDeviceConnection> blockConnections;
+                    Array<roli::BlockDeviceConnection> blockConnections;
                     for (auto connection : topology.connections)
                         if (connection.device1 == blockComponent->block->uid || connection.device2 == blockComponent->block->uid)
                             blockConnections.add (connection);
@@ -925,9 +925,9 @@ private:
     }
 
     /** Returns a rotation in degrees based on the connected edges of two blocks */
-    int getRotation (Block::ConnectionPort::DeviceEdge staticEdge, Block::ConnectionPort::DeviceEdge rotatedEdge)
+    int getRotation (roli::Block::ConnectionPort::DeviceEdge staticEdge, roli::Block::ConnectionPort::DeviceEdge rotatedEdge)
     {
-        using edge = Block::ConnectionPort::DeviceEdge;
+        using edge = roli::Block::ConnectionPort::DeviceEdge;
 
         switch (staticEdge)
         {
@@ -1015,7 +1015,7 @@ private:
     //==============================================================================
     TooltipWindow tooltipWindow;
 
-    PhysicalTopologySource topologySource;
+    roli::PhysicalTopologySource topologySource;
     OwnedArray<BlockComponent> blockComponents;
     BlockComponent* masterBlockComponent = nullptr;
 
