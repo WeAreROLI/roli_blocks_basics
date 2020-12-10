@@ -557,49 +557,49 @@ public:
     juce::int32 getLocalConfigValue (juce::uint32 item) override
     {
         initialiseDeviceIndexAndConnection();
-        return config.getItemValue ((BlocksProtocol::ConfigItemId) item);
+        return config.getItemValue ((BlockConfigId) item);
     }
 
     void setLocalConfigValue (juce::uint32 item, juce::int32 value) override
     {
         initialiseDeviceIndexAndConnection();
-        config.setItemValue ((BlocksProtocol::ConfigItemId) item, value);
+        config.setItemValue ((BlockConfigId) item, value);
     }
 
     void setLocalConfigRange (juce::uint32 item, juce::int32 min, juce::int32 max) override
     {
         initialiseDeviceIndexAndConnection();
-        config.setItemMin ((BlocksProtocol::ConfigItemId) item, min);
-        config.setItemMax ((BlocksProtocol::ConfigItemId) item, max);
+        config.setItemMin ((BlockConfigId) item, min);
+        config.setItemMax ((BlockConfigId) item, max);
     }
 
     void setLocalConfigItemActive (juce::uint32 item, bool isActive) override
     {
         initialiseDeviceIndexAndConnection();
-        config.setItemActive ((BlocksProtocol::ConfigItemId) item, isActive);
+        config.setItemActive ((BlockConfigId) item, isActive);
     }
 
     bool isLocalConfigItemActive (juce::uint32 item) override
     {
         initialiseDeviceIndexAndConnection();
-        return config.getItemActive ((BlocksProtocol::ConfigItemId) item);
+        return config.getItemActive ((BlockConfigId) item);
     }
 
     juce::uint32 getMaxConfigIndex() override
     {
-        return juce::uint32 (BlocksProtocol::maxConfigIndex);
+        return juce::uint32 (BlockConfigId::maxConfigIndex);
     }
 
     bool isValidUserConfigIndex (juce::uint32 item) override
     {
-        return item >= (juce::uint32) BlocksProtocol::ConfigItemId::user0
-        && item < (juce::uint32) (BlocksProtocol::ConfigItemId::user0 + numberOfUserConfigs);
+        return item >= (juce::uint32) BlockConfigId::user0
+        && item < (juce::uint32) (BlockConfigId::user0 + numberOfUserConfigs);
     }
 
     ConfigMetaData getLocalConfigMetaData (juce::uint32 item) override
     {
         initialiseDeviceIndexAndConnection();
-        return config.getMetaData ((BlocksProtocol::ConfigItemId) item);
+        return config.getMetaData ((BlockConfigId) item);
     }
 
     void requestFactoryConfigSync() override

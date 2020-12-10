@@ -37,7 +37,7 @@ struct BlockConfigManager
     /** Structure describing a configuration */
     struct ConfigDescription
     {
-        ConfigItemId item;
+        BlockConfigId item;
         juce::int32 value;
         juce::int32 min;
         juce::int32 max;
@@ -218,7 +218,7 @@ struct BlockConfigManager
     };
 
     //==============================================================================
-    juce::int32 getItemValue (ConfigItemId item)
+    juce::int32 getItemValue (BlockConfigId item)
     {
         juce::uint32 itemIndex;
 
@@ -228,7 +228,7 @@ struct BlockConfigManager
         return 0;
     }
 
-    void setItemValue (ConfigItemId item, juce::int32 value)
+    void setItemValue (BlockConfigId item, juce::int32 value)
     {
         juce::uint32 itemIndex;
 
@@ -238,7 +238,7 @@ struct BlockConfigManager
         setBlockConfig (item, value);
     }
 
-    juce::int32 getItemMin (ConfigItemId item)
+    juce::int32 getItemMin (BlockConfigId item)
     {
         juce::uint32 itemIndex;
 
@@ -248,7 +248,7 @@ struct BlockConfigManager
         return 0;
     }
 
-    void setItemMin (ConfigItemId item, juce::int32 min)
+    void setItemMin (BlockConfigId item, juce::int32 min)
     {
         juce::uint32 itemIndex;
 
@@ -256,7 +256,7 @@ struct BlockConfigManager
             configList[itemIndex].min = min;
     }
 
-    juce::int32 getItemMax (ConfigItemId item)
+    juce::int32 getItemMax (BlockConfigId item)
     {
         juce::uint32 itemIndex;
 
@@ -266,7 +266,7 @@ struct BlockConfigManager
         return 0;
     }
 
-    void setItemMax (ConfigItemId item, juce::int32 max)
+    void setItemMax (BlockConfigId item, juce::int32 max)
     {
         juce::uint32 itemIndex;
 
@@ -276,7 +276,7 @@ struct BlockConfigManager
         // Send updateConfig message to Block
     }
 
-    bool getItemActive (ConfigItemId item)
+    bool getItemActive (BlockConfigId item)
     {
         juce::uint32 itemIndex;
 
@@ -286,7 +286,7 @@ struct BlockConfigManager
         return false;
     }
 
-    void setItemActive (ConfigItemId item, bool isActive)
+    void setItemActive (BlockConfigId item, bool isActive)
     {
         juce::uint32 itemIndex;
 
@@ -296,7 +296,7 @@ struct BlockConfigManager
         // Send setConfigState message to Block
     }
 
-    juce::String getOptionName (ConfigItemId item, juce::uint8 optionIndex)
+    juce::String getOptionName (BlockConfigId item, juce::uint8 optionIndex)
     {
         juce::uint32 itemIndex;
 
@@ -306,7 +306,7 @@ struct BlockConfigManager
         return {};
     }
 
-    Block::ConfigMetaData getMetaData (ConfigItemId item)
+    Block::ConfigMetaData getMetaData (BlockConfigId item)
     {
         juce::uint32 itemIndex;
 
@@ -322,19 +322,19 @@ struct BlockConfigManager
             i.isActive = false;
     }
 
-    inline bool isUserConfigID (ConfigItemId id)
+    inline bool isUserConfigID (BlockConfigId id)
     {
-        return id >= ConfigItemId::user0 && id <= ConfigItemId::user31;
+        return id >= BlockConfigId::user0 && id <= BlockConfigId::user31;
     }
 
     //==============================================================================
     // Set Block Configuration
-    void setBlockConfig (ConfigItemId item, juce::int32 value)
+    void setBlockConfig (BlockConfigId item, juce::int32 value)
     {
         buildAndSendPacket ([item, value] (HostPacketBuilder<32>& p) { p.addConfigSetMessage (item, value); });
     }
 
-    void requestBlockConfig (ConfigItemId item)
+    void requestBlockConfig (BlockConfigId item)
     {
         buildAndSendPacket ([item] (HostPacketBuilder<32>& p) { p.addRequestMessage (item); });
     }
@@ -353,7 +353,7 @@ struct BlockConfigManager
     {
         juce::uint32 index;
 
-        if (getIndexForItem ((ConfigItemId) item, index))
+        if (getIndexForItem ((BlockConfigId) item, index))
         {
             configList[index].value = value;
             configList[index].min = min;
@@ -366,12 +366,12 @@ struct BlockConfigManager
     {
         juce::uint32 index;
 
-        if (getIndexForItem ((ConfigItemId) item, index))
+        if (getIndexForItem ((BlockConfigId) item, index))
             configList[index].value = value;
     }
 
 private:
-    bool getIndexForItem (ConfigItemId item, juce::uint32& index)
+    bool getIndexForItem (BlockConfigId item, juce::uint32& index)
     {
         for (juce::uint32 i = 0; i < numConfigItems; ++i)
         {

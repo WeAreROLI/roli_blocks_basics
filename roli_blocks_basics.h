@@ -67,6 +67,7 @@ namespace roli
 #include "blocks/roli_TouchList.h"
 #include "blocks/roli_StatusLight.h"
 #include "blocks/roli_BlocksVersion.h"
+#include "blocks/roli_BlockConfigId.h"
 #include "topology/roli_Topology.h"
 #include "topology/roli_BlockGraph.h"
 #include "topology/roli_TopologySource.h"
