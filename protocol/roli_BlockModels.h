@@ -269,19 +269,31 @@ private:
         hasTouchSurface = true;
         programAndHeapSize = BlocksProtocol::padBlockProgramAndHeapSize;
 
+        constexpr static auto keyBedGroup = "Keybed State";
+
         defaultConfig.add ({ mode, 0, 0, 3, false,
-                           "Color Mode", ConfigType::options,
-                           { "Rainbow",
-                             "Single Color Scale",
-                             "Piano",
-                             "Night"
+                           "Active Mode", ConfigType::options,
+                           { "Mode 1",
+                             "Mode 2",
+                             "Mode 3",
+                             "Mode 4"
                            },
-                           BlockConfigManager::playGroup });
+                           keyBedGroup });
 
         defaultConfig.add ({ zTrackingMode, 0, 0, 1, false,
                             "Pressure Tracking Mode", ConfigType::options,
                             { "Poly Aftertouch", "Channel Pressure" },
-                            BlockConfigManager::playGroup });
+                            keyBedGroup });
+
+        defaultConfig.add ({ scale, 0, 0, 18, false,
+                             "Scale", ConfigType::integer,
+                              {}, keyBedGroup });
+
+        defaultConfig.add ({ key, 0, 0, 11, false,
+                             "Key", ConfigType::options,
+                             { "C", "C#", "D", "D#",
+                               "E", "F", "F#", "G",
+                               "G#", "A", "A#", "B"}, keyBedGroup });
     }
 
     //==============================================================================
