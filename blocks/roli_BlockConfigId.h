@@ -20,7 +20,7 @@
 
 #pragma once
 
-namespace roli
+namespace roli::BlocksProtocol
 {
 enum BlockConfigId
 {
