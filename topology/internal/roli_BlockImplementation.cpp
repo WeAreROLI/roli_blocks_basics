@@ -587,7 +587,7 @@ public:
 
     juce::uint32 getMaxConfigIndex() override
     {
-        return juce::uint32 (BlockConfigId::maxConfigIndex);
+        return juce::uint32 (BlockConfigId::numConfigItems);
     }
 
     bool isValidUserConfigIndex (juce::uint32 item) override

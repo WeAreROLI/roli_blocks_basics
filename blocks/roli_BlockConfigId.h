@@ -131,6 +131,6 @@ enum BlockConfigId
     mode3_showScale     = 125,
     mode3_globalColour  = 126,
     mode3_rootColour    = 127,
-    maxConfigIndex      = 128
+    numConfigItems
 };
 } // namespace juce

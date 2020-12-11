@@ -37,7 +37,7 @@ struct BlockConfigManager
     /** Structure describing a configuration */
     struct ConfigDescription
     {
-        BlockConfigId item;
+        juce::int32 id;
         juce::int32 value;
         juce::int32 min;
         juce::int32 max;
@@ -51,25 +51,23 @@ struct BlockConfigManager
 
         Block::ConfigMetaData toConfigMetaData() const
         {
-            return Block::ConfigMetaData ((juce::uint32) item, value, { min, max }, isActive, name, type, (const char**) optionNames, group);
+            return Block::ConfigMetaData ((juce::uint32) id, value, { min, max }, isActive, name, type, (const char**) optionNames, group);
         }
     };
 
-    BlockConfigManager (juce::Array<ConfigDescription> defaultConfig)
+    BlockConfigManager (juce::Array<ConfigDescription> defaultConfigOverrides)
     {
-        for (auto c : defaultConfig)
-        {
-            juce::uint32 itemIndex;
+        for (auto config : defaultConfig)
+            configItems [config.id] = config;
 
-            if (getIndexForItem (c.item, itemIndex))
-                configList[itemIndex] = c;
-        }
+        for (auto config : defaultConfigOverrides)
+            configItems [config.id] = config;
     }
 
     void setDeviceIndex (TopologyIndex newDeviceIndex)                       { deviceIndex = newDeviceIndex; }
     void setDeviceComms (PhysicalTopologySource::DeviceConnection* newConn)  { deviceConnection = newConn; }
 
-    static constexpr juce::uint32 numConfigItems = 97;
+    static constexpr juce::uint32 numConfigItems = 96;
 
     static constexpr const char* midiSettingsGroup = "MIDI Settings";
     static constexpr const char* pitchGroup = "Pitch";
@@ -82,7 +80,7 @@ struct BlockConfigManager
     static constexpr const char* mode2Group = "Mode 3";
     static constexpr const char* mode3Group = "Mode 4";
 
-    ConfigDescription configList[numConfigItems] =
+    const ConfigDescription defaultConfig[numConfigItems] =
     {
         { midiStartChannel,     2,      1,      16,         false,  "MIDI Start Channel",   ConfigType::integer,    {},               midiSettingsGroup },
         { midiEndChannel,       16,     1,      16,         false,  "MIDI End Channel",     ConfigType::integer,    {},               midiSettingsGroup },
@@ -218,108 +216,88 @@ struct BlockConfigManager
     };
 
     //==============================================================================
-    juce::int32 getItemValue (BlockConfigId item)
+    juce::int32 getItemValue (BlockConfigId id)
     {
-        juce::uint32 itemIndex;
-
-        if (getIndexForItem (item, itemIndex))
-            return configList[itemIndex].value;
+        if (auto* desc = getConfigDesc (id))
+            return desc->value;
 
         return 0;
     }
 
-    void setItemValue (BlockConfigId item, juce::int32 value)
+    void setItemValue (BlockConfigId id, juce::int32 value)
     {
-        juce::uint32 itemIndex;
+        if (auto* desc = getConfigDesc (id))
+            desc->value = value;
 
-        if (getIndexForItem (item, itemIndex))
-            configList[itemIndex].value = value;
-
-        setBlockConfig (item, value);
+        setBlockConfig (id, value);
     }
 
-    juce::int32 getItemMin (BlockConfigId item)
+    juce::int32 getItemMin (BlockConfigId id)
     {
-        juce::uint32 itemIndex;
-
-        if (getIndexForItem (item, itemIndex))
-            return configList[itemIndex].min;
+        if (auto* desc = getConfigDesc (id))
+            return desc->min;
 
         return 0;
     }
 
-    void setItemMin (BlockConfigId item, juce::int32 min)
+    void setItemMin (BlockConfigId id, juce::int32 min)
     {
-        juce::uint32 itemIndex;
-
-        if (getIndexForItem (item, itemIndex))
-            configList[itemIndex].min = min;
+        if (auto* desc = getConfigDesc (id))
+            desc->min = min;
     }
 
-    juce::int32 getItemMax (BlockConfigId item)
+    juce::int32 getItemMax (BlockConfigId id)
     {
-        juce::uint32 itemIndex;
-
-        if (getIndexForItem (item, itemIndex))
-            return configList[itemIndex].max;
+        if (auto* desc = getConfigDesc (id))
+            return desc->max;
 
         return 0;
     }
 
-    void setItemMax (BlockConfigId item, juce::int32 max)
+    void setItemMax (BlockConfigId id, juce::int32 max)
     {
-        juce::uint32 itemIndex;
-
-        if (getIndexForItem (item, itemIndex))
-            configList[itemIndex].max = max;
+        if (auto* desc = getConfigDesc (id))
+            desc->max = max;
 
         // Send updateConfig message to Block
     }
 
-    bool getItemActive (BlockConfigId item)
+    bool getItemActive (BlockConfigId id)
     {
-        juce::uint32 itemIndex;
-
-        if (getIndexForItem (item, itemIndex))
-            return configList[itemIndex].isActive;
+        if (auto* desc = getConfigDesc (id))
+            return desc->isActive;
 
         return false;
     }
 
-    void setItemActive (BlockConfigId item, bool isActive)
+    void setItemActive (BlockConfigId id, bool isActive)
     {
-        juce::uint32 itemIndex;
-
-        if (getIndexForItem (item, itemIndex))
-            configList[itemIndex].isActive = isActive;
+        if (auto* desc = getConfigDesc (id))
+            desc->isActive = isActive;
 
         // Send setConfigState message to Block
     }
 
-    juce::String getOptionName (BlockConfigId item, juce::uint8 optionIndex)
+    juce::String getOptionName (BlockConfigId id, juce::uint8 optionIndex)
     {
-        juce::uint32 itemIndex;
-
-        if (getIndexForItem (item, itemIndex) && optionIndex < configMaxOptions)
-            return configList[itemIndex].optionNames[optionIndex];
+        if (auto* desc = getConfigDesc (id))
+            return desc->optionNames[optionIndex];
 
         return {};
     }
 
-    Block::ConfigMetaData getMetaData (BlockConfigId item)
+    Block::ConfigMetaData getMetaData (BlockConfigId id)
     {
-        juce::uint32 itemIndex;
+        if (auto* desc = getConfigDesc (id))
+            return desc->toConfigMetaData();
 
-        if (getIndexForItem (item, itemIndex))
-            return configList[itemIndex].toConfigMetaData();
-
-        return { static_cast<juce::uint32> (item) };
+        return { static_cast<juce::uint32> (id) };
     }
 
     void resetConfigListActiveStatus()
     {
-        for (auto& i : configList)
-            i.isActive = false;
+        for (auto& [key, desc] : configItems)
+            desc.isActive = false;
     }
 
     inline bool isUserConfigID (BlockConfigId id)
@@ -329,14 +307,14 @@ struct BlockConfigManager
 
     //==============================================================================
     // Set Block Configuration
-    void setBlockConfig (BlockConfigId item, juce::int32 value)
+    void setBlockConfig (BlockConfigId id, juce::int32 value)
     {
-        buildAndSendPacket ([item, value] (HostPacketBuilder<32>& p) { p.addConfigSetMessage (item, value); });
+        buildAndSendPacket ([id, value] (HostPacketBuilder<32>& p) { p.addConfigSetMessage (id, value); });
     }
 
-    void requestBlockConfig (BlockConfigId item)
+    void requestBlockConfig (BlockConfigId id)
     {
-        buildAndSendPacket ([item] (HostPacketBuilder<32>& p) { p.addRequestMessage (item); });
+        buildAndSendPacket ([id] (HostPacketBuilder<32>& p) { p.addRequestMessage (id); });
     }
 
     void requestFactoryConfigSync()
@@ -349,40 +327,27 @@ struct BlockConfigManager
         buildAndSendPacket ([] (HostPacketBuilder<32>& p) { p.addRequestUserSyncMessage(); });
     }
 
-    void handleConfigUpdateMessage (juce::int32 item, juce::int32 value, juce::int32 min, juce::int32 max)
+    void handleConfigUpdateMessage (juce::int32 id, juce::int32 value, juce::int32 min, juce::int32 max)
     {
-        juce::uint32 index;
-
-        if (getIndexForItem ((BlockConfigId) item, index))
-        {
-            configList[index].value = value;
-            configList[index].min = min;
-            configList[index].max = max;
-            configList[index].isActive = true;
-        }
+        configItems[id].value = value;
+        configItems[id].min = min;
+        configItems[id].max = max;
+        configItems[id].isActive = true;
     }
 
-    void handleConfigSetMessage (juce::int32 item, juce::int32 value)
+    void handleConfigSetMessage (juce::int32 id, juce::int32 value)
     {
-        juce::uint32 index;
-
-        if (getIndexForItem ((BlockConfigId) item, index))
-            configList[index].value = value;
+        configItems[id].value = value;
     }
 
 private:
-    bool getIndexForItem (BlockConfigId item, juce::uint32& index)
-    {
-        for (juce::uint32 i = 0; i < numConfigItems; ++i)
-        {
-            if (configList[i].item == item)
-            {
-                index = i;
-                return true;
-            }
-        }
 
-        return false;
+    ConfigDescription* getConfigDesc (BlockConfigId id)
+    {
+        auto res = configItems.find (juce::int32 (id));
+
+        return res != configItems.end() ? &res->second
+                                        : nullptr;
     }
 
     template<typename PacketBuildFn>
@@ -400,6 +365,7 @@ private:
 
     TopologyIndex deviceIndex {};
     PhysicalTopologySource::DeviceConnection* deviceConnection {};
+    std::map <juce::int32, ConfigDescription> configItems;
 };
 
 } // namespace roli
