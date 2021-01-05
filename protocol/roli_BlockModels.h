@@ -280,8 +280,15 @@ private:
                            },
                            keyBedGroup });
 
+        defaultConfig.add ({ xTrackingMode, 1, 1, 3, false,
+                            "Pitch Bend Tracking", ConfigType::options,
+                             { "Multi-Channel",
+                               "Last Played",
+                               "Highest",
+                               "Lowest" }, keyBedGroup });
+
         defaultConfig.add ({ zTrackingMode, 0, 0, 1, false,
-                            "Pressure Tracking Mode", ConfigType::options,
+                            "Pressure Tracking", ConfigType::options,
                             { "Poly Aftertouch", "Channel Pressure" },
                             keyBedGroup });
 
