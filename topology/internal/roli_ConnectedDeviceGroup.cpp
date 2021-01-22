@@ -47,9 +47,10 @@ struct ConnectedDeviceGroup  : private juce::AsyncUpdater,
             setMidiMessageCallback();
         }
 
-        initialiseSerialReader();
+        if (shouldCheckMasterSerial())
+            initialiseSerialReader();
 
-        startTimer (200);
+        startTimer (timerInterval);
         sendTopologyRequest();
     }
 
@@ -71,7 +72,17 @@ struct ConnectedDeviceGroup  : private juce::AsyncUpdater,
 
     void handleBlockRestarting (Block::UID deviceID)
     {
+        const auto wasMaster = deviceID == masterBlockUid;
+        
         forceApiDisconnected (deviceID);
+        
+        if (wasMaster && Detector::isBluetoothConnection (deviceConnection.get()))
+        {
+            //pause any checks on bluetooth to avoid sending data to a disconnected device
+            //which can cause issues when reconnecting to a device on osx / ios
+            static constexpr auto nextCheckInterval = 4000;
+            startTimer (nextCheckInterval);
+        }
     }
 
     //==============================================================================
@@ -316,6 +327,8 @@ private:
         startApiModeOnConnectedBlocks();
         checkMasterBlockVersion();
         checkMasterSerial();
+        
+        startTimer (timerInterval);
     }
 
     //==============================================================================
@@ -435,13 +448,16 @@ private:
     //==============================================================================
     void checkMasterSerial()
     {
+        if (! shouldCheckMasterSerial())
+            return;
+        
         if (masterSerialReader == nullptr)
             initialiseSerialReader();
 
-        if (masterSerialReader == nullptr)
+        if (masterSerialReader == nullptr || masterBlockUid == invalidUid)
             return;
 
-        if (masterBlockUid != invalidUid && masterSerialReader->hasSerial())
+        if (masterSerialReader->hasSerial())
         {
             auto uid = getBlockUIDFromSerialNumber (masterSerialReader->getSerial());
 
@@ -450,9 +466,16 @@ private:
         }
     }
 
+    bool shouldCheckMasterSerial()
+    {
+        return deviceConnection != nullptr && ! Detector::isBluetoothConnection (deviceConnection.get());
+    }
+    
     void updateMasterUid (const Block::UID newMasterUid)
     {
-        LOG_CONNECTIVITY ("Updating master from " + String (masterBlockUid) + " to " + String (newMasterUid));
+        LOG_CONNECTIVITY ("Updating master from "
+                          + juce::String (masterBlockUid)
+                          + " to " + juce::String (newMasterUid));
 
         masterBlockUid = newMasterUid;
 
@@ -777,6 +800,8 @@ private:
             masterSerialReader = std::make_unique<BlockSerialReader> (*midiDeviceConnection);
     }
 
+    constexpr static auto timerInterval = 200;
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ConnectedDeviceGroup)
 };
 
