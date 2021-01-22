@@ -28,7 +28,8 @@ struct Detector   : public juce::ReferenceCountedObject,
                     private juce::AsyncUpdater
 {
     using BlockImpl = BlockImplementation<Detector>;
-
+    using DeviceConnection = PhysicalTopologySource::DeviceConnection;
+    
     Detector()  : defaultDetector (new MIDIDeviceDetector()), deviceDetector (*defaultDetector)
     {
         startTimer (10);
@@ -95,9 +96,16 @@ struct Detector   : public juce::ReferenceCountedObject,
     bool isConnectedViaBluetooth (const Block& block) const noexcept
     {
         if (const auto connection = getDeviceConnectionFor (block))
-            if (const auto midiConnection = dynamic_cast<const MIDIDeviceConnection*> (connection))
-                if (midiConnection->midiInput != nullptr)
-                    return midiConnection->midiInput->getName().containsIgnoreCase ("bluetooth");
+            return isBluetoothConnection (connection);
+
+        return false;
+    }
+    
+    static bool isBluetoothConnection (const DeviceConnection* connection) noexcept
+    {
+        if (const auto midiConnection = dynamic_cast<const MIDIDeviceConnection*> (connection))
+            if (midiConnection->midiInput != nullptr)
+                return midiConnection->midiInput->getName().containsIgnoreCase ("bluetooth");
 
         return false;
     }
@@ -391,7 +399,7 @@ struct Detector   : public juce::ReferenceCountedObject,
         return nullptr;
     }
 
-    PhysicalTopologySource::DeviceConnection* getDeviceConnectionFor (const Block& b)
+    DeviceConnection* getDeviceConnectionFor (const Block& b)
     {
         for (const auto& d : connectedDeviceGroups)
         {
@@ -402,7 +410,7 @@ struct Detector   : public juce::ReferenceCountedObject,
         return nullptr;
     }
 
-    const PhysicalTopologySource::DeviceConnection* getDeviceConnectionFor (const Block& b) const
+    const DeviceConnection* getDeviceConnectionFor (const Block& b) const
     {
         for (const auto& d : connectedDeviceGroups)
         {

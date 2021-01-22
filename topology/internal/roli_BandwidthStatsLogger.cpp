@@ -40,17 +40,17 @@ namespace
             {
                 bytesPerSec = (int) (byteCount / elapsedSec);
                 byteCount = 0;
-                Logger::writeToLog (getString());
+                juce::Logger::writeToLog (getString());
             }
         }
 
-        String getString() const
+        juce::String getString() const
         {
-            return String (name) + ": "
-            + "count="    + String (messageCount).paddedRight (' ', 7)
-            + "rate="     + (String (bytesPerSec / 1024.0f, 1) + " Kb/sec").paddedRight (' ', 11)
-            + "largest="  + (String (largestMessageBytes) + " bytes").paddedRight (' ', 11)
-            + "last="     + (String (lastMessageBytes) + " bytes").paddedRight (' ', 11);
+            return juce::String (name) + ": "
+            + "count="    + juce::String (messageCount).paddedRight (' ', 7)
+            + "rate="     + (juce::String (bytesPerSec / 1024.0f, 1) + " Kb/sec").paddedRight (' ', 11)
+            + "largest="  + (juce::String (largestMessageBytes) + " bytes").paddedRight (' ', 11)
+            + "last="     + (juce::String (lastMessageBytes) + " bytes").paddedRight (' ', 11);
         }
 
         void registerMessage (int numBytes) noexcept
@@ -58,16 +58,16 @@ namespace
             byteCount += numBytes;
             ++messageCount;
             lastMessageBytes = numBytes;
-            largestMessageBytes = jmax (largestMessageBytes, numBytes);
+            largestMessageBytes = juce::jmax (largestMessageBytes, numBytes);
         }
     };
 
     static PortIOStats inputStats { "Input" }, outputStats { "Output" };
-    static uint32 startTime = 0;
+    static juce::uint32 startTime = 0;
 
     static void resetOnSecondBoundary()
     {
-        auto now = Time::getMillisecondCounter();
+        auto now = juce::Time::getMillisecondCounter();
         double elapsedSec = (now - startTime) / 1000.0;
 
         if (elapsedSec >= 1.0)
@@ -91,7 +91,7 @@ namespace
     }
 }
 
-String getMidiIOStats()
+juce::String getMidiIOStats()
 {
     return inputStats.getString() + "   " + outputStats.getString();
 }
