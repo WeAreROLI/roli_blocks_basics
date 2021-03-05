@@ -248,19 +248,38 @@ private:
         hasTouchSurface = true;
         programAndHeapSize = BlocksProtocol::padBlockProgramAndHeapSize;
 
+        constexpr static auto keyBedGroup = "Keybed State";
+
         defaultConfig.add ({ mode, 0, 0, 3, false,
-                           "Color Mode", ConfigType::options,
-                           { "Multi-color Mode",
-                             "Single Color Mode",
-                             "Piano Mode",
-                             "Night Mode"
+                           "Active Mode", ConfigType::options,
+                           { "Mode 1",
+                             "Mode 2",
+                             "Mode 3",
+                             "Mode 4"
                            },
-                           BlockConfigManager::playGroup });
+                           keyBedGroup });
+
+        defaultConfig.add ({ xTrackingMode, 1, 1, 3, false,
+                            "Pitch Bend Tracking", ConfigType::options,
+                             { "Multi-Channel",
+                               "Last Played",
+                               "Highest",
+                               "Lowest" }, keyBedGroup });
 
         defaultConfig.add ({ zTrackingMode, 0, 0, 1, false,
-                            "Pressure Tracking Mode", ConfigType::options,
+                            "Pressure Tracking", ConfigType::options,
                             { "Poly Aftertouch", "Channel Pressure" },
-                            BlockConfigManager::playGroup });
+                            keyBedGroup });
+
+        defaultConfig.add ({ scale, 0, 0, 18, false,
+                             "Scale", ConfigType::integer,
+                              {}, keyBedGroup });
+
+        defaultConfig.add ({ key, 0, 0, 11, false,
+                             "Key", ConfigType::options,
+                             { "C", "C#", "D", "D#",
+                               "E", "F", "F#", "G",
+                               "G#", "A", "A#", "B"}, keyBedGroup });
     }
 
     //==============================================================================

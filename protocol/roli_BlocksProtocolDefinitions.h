@@ -267,89 +267,9 @@ struct DeviceName
 static constexpr juce::uint8 maxBlocksInTopologyPacket = 6;
 static constexpr juce::uint8 maxConnectionsInTopologyPacket = 24;
 
-//==============================================================================
-/** Configuration Item Identifiers. */
-enum ConfigItemId
-{
-    // MIDI
-    midiStartChannel    = 0,
-    midiEndChannel      = 1,
-    midiUseMPE          = 2,
-    pitchBendRange      = 3,
-    octave              = 4,
-    transpose           = 5,
-    slideCC             = 6,
-    slideMode           = 7,
-    octaveTopology      = 8,
-    midiChannelRange    = 9,
-    MPEZone             = 40,
-    // Touch
-    velocitySensitivity = 10,
-    glideSensitivity    = 11,
-    slideSensitivity    = 12,
-    pressureSensitivity = 13,
-    liftSensitivity     = 14,
-    fixedVelocity       = 15,
-    fixedVelocityValue  = 16,
-    pianoMode           = 17,
-    glideLock           = 18,
-    glideLockEnable     = 19,
-    // Live
-    mode                = 20,
-    volume              = 21,
-    scale               = 22,
-    hideMode            = 23,
-    chord               = 24,
-    arpPattern          = 25,
-    tempo               = 26,
-    key                 = 27,
-    autoTransposeToKey  = 28,
-    // Tracking
-    xTrackingMode       = 30,
-    yTrackingMode       = 31,
-    zTrackingMode       = 32,
-    // Graphics
-    gammaCorrection     = 33,
-    globalKeyColour     = 34,
-    rootKeyColour       = 35,
-    brightness          = 36,
-    // User
-    user0               = 64,
-    user1               = 65,
-    user2               = 66,
-    user3               = 67,
-    user4               = 68,
-    user5               = 69,
-    user6               = 70,
-    user7               = 71,
-    user8               = 72,
-    user9               = 73,
-    user10              = 74,
-    user11              = 75,
-    user12              = 76,
-    user13              = 77,
-    user14              = 78,
-    user15              = 79,
-    user16              = 80,
-    user17              = 81,
-    user18              = 82,
-    user19              = 83,
-    user20              = 84,
-    user21              = 85,
-    user22              = 86,
-    user23              = 87,
-    user24              = 88,
-    user25              = 89,
-    user26              = 90,
-    user27              = 91,
-    user28              = 92,
-    user29              = 93,
-    user30              = 94,
-    user31              = 95
-};
-
 static constexpr juce::uint8 numberOfUserConfigs = 32;
-static constexpr juce::uint8 maxConfigIndex = juce::uint8 (ConfigItemId::user0) + numberOfUserConfigs;
+
+static constexpr juce::uint8 maxConfigId = 255;
 
 static constexpr juce::uint8 configUserConfigNameLength = 32;
 static constexpr juce::uint8 configMaxOptions = 16;

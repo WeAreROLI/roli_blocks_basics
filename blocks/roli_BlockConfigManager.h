@@ -37,7 +37,7 @@ struct BlockConfigManager
     /** Structure describing a configuration */
     struct ConfigDescription
     {
-        ConfigItemId item;
+        juce::int32 id;
         juce::int32 value;
         juce::int32 min;
         juce::int32 max;
@@ -51,25 +51,23 @@ struct BlockConfigManager
 
         Block::ConfigMetaData toConfigMetaData() const
         {
-            return Block::ConfigMetaData ((juce::uint32) item, value, { min, max }, isActive, name, type, (const char**) optionNames, group);
+            return Block::ConfigMetaData ((juce::uint32) id, value, { min, max }, isActive, name, type, (const char**) optionNames, group);
         }
     };
 
-    BlockConfigManager (juce::Array<ConfigDescription> defaultConfig)
+    BlockConfigManager (juce::Array<ConfigDescription> defaultConfigOverrides)
     {
-        for (auto c : defaultConfig)
-        {
-            juce::uint32 itemIndex;
+        for (auto config : defaultConfig)
+            configItems [config.id] = config;
 
-            if (getIndexForItem (c.item, itemIndex))
-                configList[itemIndex] = c;
-        }
+        for (auto config : defaultConfigOverrides)
+            configItems [config.id] = config;
     }
 
     void setDeviceIndex (TopologyIndex newDeviceIndex)                       { deviceIndex = newDeviceIndex; }
     void setDeviceComms (PhysicalTopologySource::DeviceConnection* newConn)  { deviceConnection = newConn; }
 
-    static constexpr juce::uint32 numConfigItems = 69;
+    static constexpr juce::uint32 numConfigItems = 96;
 
     static constexpr const char* midiSettingsGroup = "MIDI Settings";
     static constexpr const char* pitchGroup = "Pitch";
@@ -77,8 +75,12 @@ struct BlockConfigManager
     static constexpr const char* sensitivityGroup = "Sensitivity";
     static constexpr const char* rhythmGroup = "Rhythm";
     static constexpr const char* coloursGroup = "Colors";
+    static constexpr const char* mode0Group = "Mode 1";
+    static constexpr const char* mode1Group = "Mode 2";
+    static constexpr const char* mode2Group = "Mode 3";
+    static constexpr const char* mode3Group = "Mode 4";
 
-    ConfigDescription configList[numConfigItems] =
+    const ConfigDescription defaultConfig[numConfigItems] =
     {
         { midiStartChannel,     2,      1,      16,         false,  "MIDI Start Channel",   ConfigType::integer,    {},               midiSettingsGroup },
         { midiEndChannel,       16,     1,      16,         false,  "MIDI End Channel",     ConfigType::integer,    {},               midiSettingsGroup },
@@ -116,17 +118,17 @@ struct BlockConfigManager
                                                                                                                   "E", "F", "F#", "G",
                                                                                                                   "G#", "A", "A#", "B"}, playGroup },
         { autoTransposeToKey,   0,      0,      1,          false,  "Auto Transpose To Key",ConfigType::boolean,    {},               pitchGroup },
-        { xTrackingMode,        1,      1,      4,          false,  "Glide Tracking Mode",  ConfigType::options,    { "Multi-Channel",
+        { xTrackingMode,        1,      1,      4,          false,  "Glide Tracking",  ConfigType::options,    { "Multi-Channel",
                                                                                                                   "Last Played",
                                                                                                                   "Highest",
                                                                                                                   "Lowest",
                                                                                                                   "Disabled" },   playGroup },
-        { yTrackingMode,        1,      1,      4,          false,  "Slide Tracking Mode",  ConfigType::options,    { "Multi-Channel",
+        { yTrackingMode,        1,      1,      4,          false,  "Slide Tracking",  ConfigType::options,    { "Multi-Channel",
                                                                                                                   "Last Played",
                                                                                                                   "Highest",
                                                                                                                   "Lowest",
                                                                                                                   "Disabled" },   playGroup },
-        { zTrackingMode,        1,      0,      4,          false,  "Pressure Tracking Mode", ConfigType::options, { "Poly Aftertouch",
+        { zTrackingMode,        1,      0,      4,          false,  "Pressure Tracking", ConfigType::options, { "Poly Aftertouch",
                                                                                                                   "Last Played",
                                                                                                                   "Highest",
                                                                                                                   "Lowest",
@@ -170,124 +172,148 @@ struct BlockConfigManager
         { user28,               0,    0,      127,          false,  {},                     ConfigType::integer,    {},               {} },
         { user29,               0,    0,      127,          false,  {},                     ConfigType::integer,    {},               {} },
         { user30,               0,    0,      127,          false,  {},                     ConfigType::integer,    {},               {} },
-        { user31,               0,    0,      127,          false,  {},                     ConfigType::integer,    {},               {} }
+        { user31,               0,    0,      127,          false,  {},                     ConfigType::integer,    {},               {} },
+        { mode0_colorType,      0,    0,      4,            false,  "Color Scheme",         ConfigType::options,    {"Pro", "User", "Piano", "Stage",
+                                                                                                                     "Rainbow"},      mode0Group },
+        { mode0_midiMode,       0,    0,      1,            false,  "MIDI Settings",        ConfigType::options,    { "Single Channel",
+                                                                                                                    "MPE" },          mode0Group },
+        { mode0_pitchEnable,    0,    0,      1,            false,  "Enable Pitch Bend",    ConfigType::boolean,    {},               mode0Group },
+        { mode0_pressureEnable, 0,    0,      1,            false,  "Enable Pressure",      ConfigType::boolean,    {},               mode0Group },
+        { mode0_showScale,      0,    0,      1,            false,  "Show Scales",          ConfigType::boolean,    {},               mode0Group },
+        { mode0_globalColour, INT32_MIN, INT32_MIN, INT32_MAX, false,  "Global Key Color",  ConfigType::colour,     {},               mode0Group },
+        { mode0_rootColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color",    ConfigType::colour,     {},               mode0Group },
+
+        { mode1_colorType,      0,    0,      4,            false,  "Color Scheme",         ConfigType::options,    {"Pro", "User", "Piano", "Stage",
+                                                                                                                     "Rainbow"},      mode1Group },
+        { mode1_midiMode,       0,    0,      1,            false,  "MIDI Settings",        ConfigType::options,    { "Single Channel",
+                                                                                                                    "MPE" },          mode1Group },
+        { mode1_pitchEnable,    0,    0,      1,            false,  "Enable Pitch Bend",    ConfigType::boolean,    {},               mode1Group },
+        { mode1_pressureEnable, 0,    0,      1,            false,  "Enable Pressure",      ConfigType::boolean,    {},               mode1Group },
+        { mode1_showScale,      0,    0,      1,            false,  "Show Scales",          ConfigType::boolean,    {},               mode1Group },
+        { mode1_globalColour, INT32_MIN, INT32_MIN, INT32_MAX, false,  "Global Key Color",  ConfigType::colour,     {},               mode1Group },
+        { mode1_rootColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color",    ConfigType::colour,     {},               mode1Group },
+
+        { mode2_colorType,      0,    0,      4,            false,  "Color Scheme",         ConfigType::options,    {"Pro", "User", "Piano", "Stage",
+                                                                                                                     "Rainbow"},      mode2Group },
+        { mode2_midiMode,       0,    0,      1,            false,  "MIDI Settings",        ConfigType::options,    { "Single Channel",
+                                                                                                                    "MPE" },          mode2Group },
+        { mode2_pitchEnable,    0,    0,      1,            false,  "Enable Pitch Bend",    ConfigType::boolean,    {},               mode2Group },
+        { mode2_pressureEnable, 0,    0,      1,            false,  "Enable Pressure",      ConfigType::boolean,    {},               mode2Group },
+        { mode2_showScale,      0,    0,      1,            false,  "Show Scales",          ConfigType::boolean,    {},               mode2Group },
+        { mode2_globalColour, INT32_MIN, INT32_MIN, INT32_MAX, false,  "Global Key Color",  ConfigType::colour,     {},               mode2Group },
+        { mode2_rootColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color",    ConfigType::colour,     {},               mode2Group },
+
+        { mode3_colorType,      0,    0,      4,            false,  "Color Scheme",         ConfigType::options,    {"Pro", "User", "Piano", "Stage",
+                                                                                                                     "Rainbow"},      mode3Group },
+        { mode3_midiMode,       0,    0,      1,            false,  "MIDI Settings",        ConfigType::options,    { "Single Channel",
+                                                                                                                    "MPE" },          mode3Group },
+        { mode3_pitchEnable,    0,    0,      1,            false,  "Enable Pitch Bend",    ConfigType::boolean,    {},               mode3Group },
+        { mode3_pressureEnable, 0,    0,      1,            false,  "Enable Pressure",      ConfigType::boolean,    {},               mode3Group },
+        { mode3_showScale,      0,    0,      1,            false,  "Show Scales",          ConfigType::boolean,    {},               mode3Group },
+        { mode3_globalColour, INT32_MIN, INT32_MIN, INT32_MAX, false,  "Global Key Color",  ConfigType::colour,     {},               mode3Group },
+        { mode3_rootColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color",    ConfigType::colour,     {},               mode3Group }
     };
 
     //==============================================================================
-    juce::int32 getItemValue (ConfigItemId item)
+    juce::int32 getItemValue (BlockConfigId id)
     {
-        juce::uint32 itemIndex;
-
-        if (getIndexForItem (item, itemIndex))
-            return configList[itemIndex].value;
+        if (auto* desc = getConfigDesc (id))
+            return desc->value;
 
         return 0;
     }
 
-    void setItemValue (ConfigItemId item, juce::int32 value)
+    void setItemValue (BlockConfigId id, juce::int32 value)
     {
-        juce::uint32 itemIndex;
+        if (auto* desc = getConfigDesc (id))
+            desc->value = value;
 
-        if (getIndexForItem (item, itemIndex))
-            configList[itemIndex].value = value;
-
-        setBlockConfig (item, value);
+        setBlockConfig (id, value);
     }
 
-    juce::int32 getItemMin (ConfigItemId item)
+    juce::int32 getItemMin (BlockConfigId id)
     {
-        juce::uint32 itemIndex;
-
-        if (getIndexForItem (item, itemIndex))
-            return configList[itemIndex].min;
+        if (auto* desc = getConfigDesc (id))
+            return desc->min;
 
         return 0;
     }
 
-    void setItemMin (ConfigItemId item, juce::int32 min)
+    void setItemMin (BlockConfigId id, juce::int32 min)
     {
-        juce::uint32 itemIndex;
-
-        if (getIndexForItem (item, itemIndex))
-            configList[itemIndex].min = min;
+        if (auto* desc = getConfigDesc (id))
+            desc->min = min;
     }
 
-    juce::int32 getItemMax (ConfigItemId item)
+    juce::int32 getItemMax (BlockConfigId id)
     {
-        juce::uint32 itemIndex;
-
-        if (getIndexForItem (item, itemIndex))
-            return configList[itemIndex].max;
+        if (auto* desc = getConfigDesc (id))
+            return desc->max;
 
         return 0;
     }
 
-    void setItemMax (ConfigItemId item, juce::int32 max)
+    void setItemMax (BlockConfigId id, juce::int32 max)
     {
-        juce::uint32 itemIndex;
-
-        if (getIndexForItem (item, itemIndex))
-            configList[itemIndex].max = max;
+        if (auto* desc = getConfigDesc (id))
+            desc->max = max;
 
         // Send updateConfig message to Block
     }
 
-    bool getItemActive (ConfigItemId item)
+    bool getItemActive (BlockConfigId id)
     {
-        juce::uint32 itemIndex;
-
-        if (getIndexForItem (item, itemIndex))
-            return configList[itemIndex].isActive;
+        if (auto* desc = getConfigDesc (id))
+            return desc->isActive;
 
         return false;
     }
 
-    void setItemActive (ConfigItemId item, bool isActive)
+    void setItemActive (BlockConfigId id, bool isActive)
     {
-        juce::uint32 itemIndex;
-
-        if (getIndexForItem (item, itemIndex))
-            configList[itemIndex].isActive = isActive;
+        if (auto* desc = getConfigDesc (id))
+            desc->isActive = isActive;
 
         // Send setConfigState message to Block
     }
 
-    juce::String getOptionName (ConfigItemId item, juce::uint8 optionIndex)
+    juce::String getOptionName (BlockConfigId id, juce::uint8 optionIndex)
     {
-        juce::uint32 itemIndex;
-
-        if (getIndexForItem (item, itemIndex) && optionIndex < configMaxOptions)
-            return configList[itemIndex].optionNames[optionIndex];
+        if (auto* desc = getConfigDesc (id))
+            return desc->optionNames[optionIndex];
 
         return {};
     }
 
-    Block::ConfigMetaData getMetaData (ConfigItemId item)
+    Block::ConfigMetaData getMetaData (BlockConfigId id)
     {
-        juce::uint32 itemIndex;
+        if (auto* desc = getConfigDesc (id))
+            return desc->toConfigMetaData();
 
-        if (getIndexForItem (item, itemIndex))
-            return configList[itemIndex].toConfigMetaData();
-
-        return { static_cast<juce::uint32> (item) };
+        return { static_cast<juce::uint32> (id) };
     }
 
     void resetConfigListActiveStatus()
     {
-        for (auto& i : configList)
-            i.isActive = false;
+        for (auto& [key, desc] : configItems)
+            desc.isActive = false;
+    }
+
+    inline bool isUserConfigID (BlockConfigId id)
+    {
+        return id >= BlockConfigId::user0 && id <= BlockConfigId::user31;
     }
 
     //==============================================================================
     // Set Block Configuration
-    void setBlockConfig (ConfigItemId item, juce::int32 value)
+    void setBlockConfig (BlockConfigId id, juce::int32 value)
     {
-        buildAndSendPacket ([item, value] (HostPacketBuilder<32>& p) { p.addConfigSetMessage (item, value); });
+        buildAndSendPacket ([id, value] (HostPacketBuilder<32>& p) { p.addConfigSetMessage (id, value); });
     }
 
-    void requestBlockConfig (ConfigItemId item)
+    void requestBlockConfig (BlockConfigId id)
     {
-        buildAndSendPacket ([item] (HostPacketBuilder<32>& p) { p.addRequestMessage (item); });
+        buildAndSendPacket ([id] (HostPacketBuilder<32>& p) { p.addRequestMessage (id); });
     }
 
     void requestFactoryConfigSync()
@@ -300,40 +326,27 @@ struct BlockConfigManager
         buildAndSendPacket ([] (HostPacketBuilder<32>& p) { p.addRequestUserSyncMessage(); });
     }
 
-    void handleConfigUpdateMessage (juce::int32 item, juce::int32 value, juce::int32 min, juce::int32 max)
+    void handleConfigUpdateMessage (juce::int32 id, juce::int32 value, juce::int32 min, juce::int32 max)
     {
-        juce::uint32 index;
-
-        if (getIndexForItem ((ConfigItemId) item, index))
-        {
-            configList[index].value = value;
-            configList[index].min = min;
-            configList[index].max = max;
-            configList[index].isActive = true;
-        }
+        configItems[id].value = value;
+        configItems[id].min = min;
+        configItems[id].max = max;
+        configItems[id].isActive = true;
     }
 
-    void handleConfigSetMessage (juce::int32 item, juce::int32 value)
+    void handleConfigSetMessage (juce::int32 id, juce::int32 value)
     {
-        juce::uint32 index;
-
-        if (getIndexForItem ((ConfigItemId) item, index))
-            configList[index].value = value;
+        configItems[id].value = value;
     }
 
 private:
-    bool getIndexForItem (ConfigItemId item, juce::uint32& index)
-    {
-        for (juce::uint32 i = 0; i < numConfigItems; ++i)
-        {
-            if (configList[i].item == item)
-            {
-                index = i;
-                return true;
-            }
-        }
 
-        return false;
+    ConfigDescription* getConfigDesc (BlockConfigId id)
+    {
+        auto res = configItems.find (juce::int32 (id));
+
+        return res != configItems.end() ? &res->second
+                                        : nullptr;
     }
 
     template<typename PacketBuildFn>
@@ -351,6 +364,7 @@ private:
 
     TopologyIndex deviceIndex {};
     PhysicalTopologySource::DeviceConnection* deviceConnection {};
+    std::map <juce::int32, ConfigDescription> configItems;
 };
 
 } // namespace roli

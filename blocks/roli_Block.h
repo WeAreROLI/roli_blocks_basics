@@ -48,6 +48,10 @@ public:
         lumiKeysBlock          /**< LUMI Keys block type          */
     };
 
+    /** Determines whether set program will be a temporary or default script saved to flash
+    */
+    enum class ProgramPersistency { setAsTemp, setAsDefault };
+
     /** The Block class is reference-counted, so always use a Block::Ptr when
         you are keeping references to them.
     */
@@ -74,6 +78,8 @@ public:
         This will be globally unique, and remains constant for a particular device.
     */
     const UID uid;
+
+    ProgramPersistency programPersistency { ProgramPersistency::setAsTemp };
 
     //==============================================================================
     /** Two blocks are considered equal if they have the same UID. */
@@ -253,7 +259,6 @@ public:
         Optional parameter to determine if program is set temporarily or saved
         to flash as the default prgram./
     */
-    enum class ProgramPersistency { setAsTemp, setAsDefault };
     virtual juce::Result setProgram (std::unique_ptr<Program>,
                                      ProgramPersistency persistency = ProgramPersistency::setAsTemp) = 0;
 

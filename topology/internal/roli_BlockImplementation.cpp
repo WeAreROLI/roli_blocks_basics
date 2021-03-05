@@ -218,10 +218,7 @@ public:
     bool sendMessageToDevice (const PacketBuilder& builder)
     {
         if (detector != nullptr)
-        {
-            lastMessageSendTime = juce::Time::getCurrentTime();
             return detector->sendMessageToDevice (uid, builder);
-        }
 
         return false;
     }
@@ -307,7 +304,7 @@ public:
         stopTimer();
 
         programSize = 0;
-        isProgramLoaded = shouldSaveProgramAsDefault = false;
+        isProgramLoaded = false;
 
         if (program == nullptr)
         {
@@ -335,7 +332,7 @@ public:
         const auto legacyProgramChangeConfigIndex = getMaxConfigIndex();
         handleConfigItemChanged ({ legacyProgramChangeConfigIndex }, legacyProgramChangeConfigIndex);
 
-        shouldSaveProgramAsDefault = persistency == ProgramPersistency::setAsDefault;
+        programPersistency = persistency;
         startTimer (20);
 
         return juce::Result::ok();
@@ -380,7 +377,7 @@ public:
             isProgramLoaded = true;
             stopTimer();
 
-            if (shouldSaveProgramAsDefault)
+            if (programPersistency == ProgramPersistency::setAsDefault)
                 doSaveProgramAsDefault();
 
             programLoadedListeners.call([&] (ProgramLoadedListener& l) { l.handleProgramLoaded (*this); });
@@ -393,7 +390,7 @@ public:
 
     void saveProgramAsDefault() override
     {
-        shouldSaveProgramAsDefault = true;
+        programPersistency = ProgramPersistency::setAsDefault;
 
         if (! isTimerRunning() && isProgramLoaded)
             doSaveProgramAsDefault();
@@ -401,7 +398,7 @@ public:
 
     void resetProgramToDefault() override
     {
-        if (! shouldSaveProgramAsDefault)
+        if (programPersistency == ProgramPersistency::setAsTemp)
             setProgram (nullptr);
 
         sendCommandMessage (BlocksProtocol::endAPIMode);
@@ -480,7 +477,7 @@ public:
 
     void pingFromDevice()
     {
-        lastMessageReceiveTime = juce::Time::getCurrentTime();
+        lastPingReceiveTime = juce::Time::getCurrentTime();
     }
 
     MIDIDeviceConnection* getDeviceConnection()
@@ -534,8 +531,11 @@ public:
 
         remoteHeap.sendChanges (*this, false);
 
-        if (lastMessageSendTime < juce::Time::getCurrentTime() - getPingInterval())
+        if (lastPingSendTime < juce::Time::getCurrentTime() - getPingInterval())
+        {
+            lastPingSendTime = juce::Time::getCurrentTime();
             sendCommandMessage (BlocksProtocol::ping);
+        }
     }
 
     juce::RelativeTime getPingInterval()
@@ -557,49 +557,49 @@ public:
     juce::int32 getLocalConfigValue (juce::uint32 item) override
     {
         initialiseDeviceIndexAndConnection();
-        return config.getItemValue ((BlocksProtocol::ConfigItemId) item);
+        return config.getItemValue ((BlockConfigId) item);
     }
 
     void setLocalConfigValue (juce::uint32 item, juce::int32 value) override
     {
         initialiseDeviceIndexAndConnection();
-        config.setItemValue ((BlocksProtocol::ConfigItemId) item, value);
+        config.setItemValue ((BlockConfigId) item, value);
     }
 
     void setLocalConfigRange (juce::uint32 item, juce::int32 min, juce::int32 max) override
     {
         initialiseDeviceIndexAndConnection();
-        config.setItemMin ((BlocksProtocol::ConfigItemId) item, min);
-        config.setItemMax ((BlocksProtocol::ConfigItemId) item, max);
+        config.setItemMin ((BlockConfigId) item, min);
+        config.setItemMax ((BlockConfigId) item, max);
     }
 
     void setLocalConfigItemActive (juce::uint32 item, bool isActive) override
     {
         initialiseDeviceIndexAndConnection();
-        config.setItemActive ((BlocksProtocol::ConfigItemId) item, isActive);
+        config.setItemActive ((BlockConfigId) item, isActive);
     }
 
     bool isLocalConfigItemActive (juce::uint32 item) override
     {
         initialiseDeviceIndexAndConnection();
-        return config.getItemActive ((BlocksProtocol::ConfigItemId) item);
+        return config.getItemActive ((BlockConfigId) item);
     }
 
     juce::uint32 getMaxConfigIndex() override
     {
-        return juce::uint32 (BlocksProtocol::maxConfigIndex);
+        return juce::uint32 (BlockConfigId::numConfigItems);
     }
 
     bool isValidUserConfigIndex (juce::uint32 item) override
     {
-        return item >= (juce::uint32) BlocksProtocol::ConfigItemId::user0
-        && item < (juce::uint32) (BlocksProtocol::ConfigItemId::user0 + numberOfUserConfigs);
+        return item >= (juce::uint32) BlockConfigId::user0
+        && item < (juce::uint32) (BlockConfigId::user0 + numberOfUserConfigs);
     }
 
     ConfigMetaData getLocalConfigMetaData (juce::uint32 item) override
     {
         initialiseDeviceIndexAndConnection();
-        return config.getMetaData ((BlocksProtocol::ConfigItemId) item);
+        return config.getMetaData ((BlockConfigId) item);
     }
 
     void requestFactoryConfigSync() override
@@ -683,7 +683,7 @@ public:
     RemoteHeapType remoteHeap;
 
     juce::WeakReference<Detector> detector;
-    juce::Time lastMessageSendTime, lastMessageReceiveTime;
+    juce::Time lastPingSendTime, lastPingReceiveTime;
 
     BlockConfigManager config;
 
@@ -709,7 +709,6 @@ private:
     friend Detector;
 
     bool isProgramLoaded = false;
-    bool shouldSaveProgramAsDefault = false;
     bool hasBeenPowerCycled = false;
 
     void initialiseDeviceIndexAndConnection()
