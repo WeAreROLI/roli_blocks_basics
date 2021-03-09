@@ -728,7 +728,7 @@ bool isMasterInCurrentCluster();
 
 /** Returns current value of one of the local config items.
 
-    @param item    the config item to get (see ConfigItemId enum in roli_BlocksProtocolDefinitions.h)
+    @param item    the config item to get (see ConfigItemId enum in roli_BlockConfigId.h)
 
     @note Requires >= 0.2.5 firmware
 */
@@ -736,7 +736,7 @@ int getLocalConfig (int item);
 
 /** Sets the current value of one of the local config items.
 
-    @param item     the config item to set the value of (see ConfigItemId enum in roli_BlocksProtocolDefinitions.h)
+    @param item     the config item to set the value of (see ConfigItemId enum in roli_BlockConfigId.h)
     @param value    the value to set the config to
 
     @note Requires >= 0.2.5 firmware
@@ -746,7 +746,7 @@ void setLocalConfig (int item, int value);
 /** Sets the local config of a block to the config item of a remote block.
 
     @param longAddress    the address of the remote block
-    @param item           the config item (see ConfigItemId enum in roli_BlocksProtocolDefinitions.h)
+    @param item           the config item (see ConfigItemId enum in roli_BlockConfigId.h)
 
     @note Requires >= 0.2.5 firmware
 */
@@ -755,7 +755,7 @@ void requestRemoteConfig (int longAddress, int item);
 /** Sets the config of a remote block.
 
     @param longAddress    the address of the remote block
-    @param item           the config item (see ConfigItemId enum in roli_BlocksProtocolDefinitions.h)
+    @param item           the config item (see ConfigItemId enum in roli_BlockConfigId.h)
     @param value          the value to set the config to
 
     @note Requires >= 0.2.5 firmware
@@ -764,7 +764,7 @@ void setRemoteConfig (int longAddress, int item, int value);
 
 /** Sets the range of one of the local config items.
 
-    @param item    the config item to set the range of (see ConfigItemId enum in roli_BlocksProtocolDefinitions.h)
+    @param item    the config item to set the range of (see ConfigItemId enum in roli_BlockConfigId.h)
     @param min     the minimum value this config item should use
     @param max     the maximum value this config item should use
 
@@ -774,7 +774,7 @@ void setLocalConfigItemRange (int item, int min, int max);
 
 /** Sets whether a local config item should be active.
 
-    @param item           the config item to set active (see ConfigItemId enum in roli_BlocksProtocolDefinitions.h)
+    @param item           the config item to set active (see ConfigItemId enum in roli_BlockConfigId.h)
     @param isActive       sets whether the config should be active or not
     @param saveToFlash    if true then this config item will be saved to the flash memory of the block
 
@@ -782,4 +782,72 @@ void setLocalConfigItemRange (int item, int min, int max);
 */
 void setLocalConfigActiveState (int item, bool isActive, bool saveToFlash);
 
+/** Sets whether to use the default key handler for custom key handling on LUMI
+
+    @param active         sets whether to use the default key handler for touches and lighting
+
+    @note Requires >= 1.3.0 firmware
+
+    @see keyStrike, keyPress, keyLift, keyMove
+*/
+void setUseDefaultKeyHandler (bool active);
+
+/** Sets whether to use the default key handler for custom key handling on LUMI
+
+    @param touchActive    sets whether to use the default key handler for touches
+    @param lightingActive sets whether to use the default key handler for key lighting
+
+    @note Requires >= 1.3.0 firmware
+
+    @see keyStrike, keyPress, keyLift, keyMove
+*/
+void setUseDefaultKeyHandler (bool touchActive, bool lightingActive);
+
+/** Strike key handler callback
+
+    @param keyIndex       the index of the key
+    @param unused         unused variable
+    @param velocity       velocity of strike, in the range 0 to 127
+
+    @see setUseDefaultKeyHandler
+*/
+void keyStrike (int keyIndex, int unused, int velocity)
+{
+}
+
+/** Press key handler callback
+
+    @param keyIndex       the index of the key
+    @param aftertouch     aftertouch amount, in the range 0 to 127
+    @param velocity       velocity of strike, in the range 0 to 127
+
+    @see setUseDefaultKeyHandler
+*/
+void keyPress (int keyIndex, int aftertouch, int velocity)
+{
+}
+
+/** Lift key handler callback
+
+    @param keyIndex       the index of the key
+    @param unused         unused variable
+    @param velocity       velocity of lift, in the range 0 to 127
+
+    @see setUseDefaultKeyHandler
+*/
+void keyLift (int keyIndex, int unused, int velocity)
+{
+}
+
+/** Key move handler callback
+
+    @param keyIndex       the index of the key
+    @param pitchbend      pitchbend amount, in the range 0 to 16383
+    @param aftertouch     aftertouch amount , in the range 0 to 127
+
+    @see setUseDefaultKeyHandler
+*/
+void keyMove (int keyIndex, int pitchbend, int aftertouch)
+{
+}
 /** @} */
