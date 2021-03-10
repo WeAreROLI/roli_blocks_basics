@@ -1,0 +1,192 @@
+#include "ConfigIds.littlefoot"
+
+//==============================================================================
+//
+// Cluster Sync
+//
+// Will call 'ClusterSync_Overrride_clusterChanged()' when there is a change to
+// the cluster or local config items
+//
+// Program that includes this must implement -
+// void ClusterSync_Overrride_clusterChanged() {}
+//
+//==============================================================================
+
+//==============================================================================
+//
+// Example (uncomment to run)
+//
+//==============================================================================
+//
+// void initialise()
+// {
+//     ClusterSync_initialise();
+// }
+// 
+// void repaint()
+// {
+//     ClusterSync_sync();
+// }
+// 
+// const int green = 0xFF00FF00;
+// const int red = 0xFFFF0000;
+// 
+// int getColour (int val)
+// {
+//     return (val >= 0 ? green : red);
+// }
+// 
+// void ClusterSync_Overrride_clusterChanged()
+// {
+//     clearDisplay();
+//     drawNumber (abs (ClusterSync_xPos), getColour (ClusterSync_xPos), 2, 1);
+//     drawNumber (abs (ClusterSync_yPos), getColour (ClusterSync_yPos), 9, 1);
+//     drawNumber (abs (ClusterSync_xShift), getColour (ClusterSync_xShift), 2, 8);
+//     drawNumber (abs (ClusterSync_yShift), getColour (ClusterSync_yShift), 9, 8);
+// }
+// 
+//==============================================================================
+
+int ClusterSync_xShift, ClusterSync_yShift;
+int ClusterSync_clusterWidth, ClusterSync_clusterHeight;
+int ClusterSync_xPos, ClusterSync_yPos;
+int ClusterSync_scale;
+int ClusterSync_mode;
+int ClusterSync_octave;
+int ClusterSync_hideMode;
+int ClusterSync_transpose;
+
+//==============================================================================
+void ClusterSync_initialise()
+{
+    // initialiseConfig
+    for (int i = 0; i < 25; ++i)
+        if (i != ConfigId_octaveTopology && i != ConfigId_midiChannelRange && i != ConfigId_volume)
+            setLocalConfigActiveState (i, true, true);
+
+    setLocalConfigActiveState (ConfigId_xTrackingMode, true, true);
+    setLocalConfigActiveState (ConfigId_yTrackingMode, true, true);
+    setLocalConfigActiveState (ConfigId_zTrackingMode, true, true);
+
+    setLocalConfigItemRange (ConfigId_octave, -4, 6);
+    setLocalConfigItemRange (ConfigId_slideMode, 0, 2);
+    setLocalConfigItemRange (ConfigId_mode, 1, 5);
+    setLocalConfigItemRange (ConfigId_scale, 0, 18);
+    setLocalConfigItemRange (ConfigId_chord, 0, 14);
+
+    setLocalConfigItemRange (ConfigId_xTrackingMode, 1, 4);
+    setLocalConfigItemRange (ConfigId_yTrackingMode, 1, 4);
+}
+
+void ClusterSync_sync()
+{
+    ClusterSync_checkConfigUpdates();
+    ClusterSync_updateTopologyShift();
+}
+
+//==============================================================================
+void ClusterSync_updateTopologyShift()
+{
+    int xShiftLast = ClusterSync_xShift;
+    int yShiftLast = ClusterSync_yShift;
+    ClusterSync_xShift = 0;
+    ClusterSync_yShift = 0;
+        
+    if (getClusterWidth() > 1 || getClusterHeight() > 1)
+    {
+        if (getLocalConfig (ConfigId_mode) < 5)
+        {
+            ClusterSync_xShift = getClusterXpos();
+            ClusterSync_yShift = getClusterYpos();
+        }
+        else if (isMasterInCurrentCluster())
+        {
+            ClusterSync_xShift = getHorizontalDistFromMaster() / 2;
+            ClusterSync_yShift = getVerticalDistFromMaster() / 2;
+        }
+        else
+        {
+            int octStartWidth = ((getClusterWidth() - 1) / 2);
+            ClusterSync_xShift = (getClusterXpos() - octStartWidth);
+            
+            int octStartHeight = ((getClusterHeight() - 1) / 2);            
+            ClusterSync_yShift = (getClusterYpos() - octStartHeight);
+        }
+    }
+
+    if (ClusterSync_clusterWidth != getClusterWidth() || ClusterSync_xPos != getClusterXpos() || xShiftLast != ClusterSync_xShift)
+    {
+        if (isMasterInCurrentCluster())
+        {
+            if (isMasterBlock())
+                ClusterSync_syncCluster();
+        }
+        else if (! getClusterXpos())
+        {
+            ClusterSync_syncCluster();
+        }
+
+        ClusterSync_clusterWidth = getClusterWidth();
+        ClusterSync_xPos = getClusterXpos();
+
+        ClusterSync_Overrride_clusterChanged();
+    }
+    else if (ClusterSync_clusterHeight != getClusterHeight() || ClusterSync_yPos != getClusterYpos() || yShiftLast != ClusterSync_yShift)
+    {
+        if (isMasterInCurrentCluster())
+        {
+            if (isMasterBlock())
+                ClusterSync_syncCluster();
+        }
+        else if (! getClusterYpos())
+        {
+            ClusterSync_syncCluster();
+        }
+
+        ClusterSync_clusterHeight = getClusterHeight();
+        ClusterSync_yPos = getClusterYpos();
+
+        ClusterSync_Overrride_clusterChanged();
+    }
+}
+
+void ClusterSync_syncCluster()
+{
+    if (getNumBlocksInCurrentCluster() < 2)
+        return;
+    
+    for (int i = 3; i <= 7; ++i)
+        ClusterSync_sendConfigItemToCluster (i);
+
+    for (int i = 10; i <= 23; ++i)
+        ClusterSync_sendConfigItemToCluster (i);
+}
+
+void ClusterSync_sendConfigItemToCluster (int itemId)
+{
+    if (getNumBlocksInCurrentCluster() < 2)
+        return;
+
+    int numBlocksInCluster = getNumBlocksInCurrentCluster();
+
+    for (int i = 0; i < numBlocksInCluster; ++i)
+        if (getBlockIdForBlockInCluster(i) != getBlockIDForIndex (0))
+            setRemoteConfig (getBlockIdForBlockInCluster(i), itemId, getLocalConfig (itemId));
+}
+
+void ClusterSync_checkConfigUpdates()
+{    
+    if (ClusterSync_scale != getLocalConfig (ConfigId_scale)
+     || ClusterSync_mode != getLocalConfig (ConfigId_mode)
+     || ClusterSync_octave != getLocalConfig (ConfigId_octave)
+     || ClusterSync_hideMode != getLocalConfig (ConfigId_hideMode)
+     || ClusterSync_transpose != getLocalConfig (ConfigId_transpose))
+    {
+        ClusterSync_scale = getLocalConfig (ConfigId_scale);
+        ClusterSync_mode = getLocalConfig (ConfigId_mode);
+        ClusterSync_octave = getLocalConfig (ConfigId_octave);
+        ClusterSync_hideMode = getLocalConfig (ConfigId_hideMode);
+        ClusterSync_transpose = getLocalConfig (ConfigId_transpose);
+        ClusterSync_Overrride_clusterChanged();
+    }
+}

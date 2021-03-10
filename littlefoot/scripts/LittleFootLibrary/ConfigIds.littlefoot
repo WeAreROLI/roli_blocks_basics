@@ -1,0 +1,80 @@
+// MIDI
+const int ConfigId_midiStartChannel    = 0;
+const int ConfigId_midiEndChannel      = 1;
+const int ConfigId_midiUseMPE          = 2;
+const int ConfigId_pitchBendRange      = 3;
+const int ConfigId_octave              = 4;
+const int ConfigId_transpose           = 5;
+const int ConfigId_slideCC             = 6;
+const int ConfigId_slideMode           = 7;
+const int ConfigId_octaveTopology      = 8;
+const int ConfigId_midiChannelRange    = 9;
+const int ConfigId_MPEZone             = 40;
+
+// Touch
+const int ConfigId_velocitySensitivity = 10;
+const int ConfigId_glideSensitivity    = 11;
+const int ConfigId_slideSensitivity    = 12;
+const int ConfigId_pressureSensitivity = 13;
+const int ConfigId_liftSensitivity     = 14;
+const int ConfigId_fixedVelocity       = 15;
+const int ConfigId_fixedVelocityValue  = 16;
+const int ConfigId_pianoMode           = 17;
+const int ConfigId_glideLockRate       = 18;
+const int ConfigId_glideLockEnable     = 19;
+
+// Live
+const int ConfigId_mode                = 20;
+const int ConfigId_volume              = 21;
+const int ConfigId_scale               = 22;
+const int ConfigId_hideMode            = 23;
+const int ConfigId_chord               = 24;
+const int ConfigId_arpPattern          = 25;
+const int ConfigId_tempo               = 26;
+const int ConfigId_rootKey             = 27;
+const int ConfigId_transposeToKey      = 28;
+
+// Tracking
+const int ConfigId_xTrackingMode       = 30;
+const int ConfigId_yTrackingMode       = 31;
+const int ConfigId_zTrackingMode       = 32;
+
+// Graphics
+const int ConfigId_gammaCorrection     = 33;
+const int ConfigId_globalKeyColour     = 34;
+const int ConfigId_rootKeyColour       = 35;
+const int ConfigId_brightness          = 36;
+
+// User
+const int ConfigId_user0               = 64;
+const int ConfigId_user1               = 65;
+const int ConfigId_user2               = 66;
+const int ConfigId_user3               = 67;
+const int ConfigId_user4               = 68;
+const int ConfigId_user5               = 69;
+const int ConfigId_user6               = 70;
+const int ConfigId_user7               = 71;
+const int ConfigId_user8               = 72;
+const int ConfigId_user9               = 73;
+const int ConfigId_user10              = 74;
+const int ConfigId_user11              = 75;
+const int ConfigId_user12              = 76;
+const int ConfigId_user13              = 77;
+const int ConfigId_user14              = 78;
+const int ConfigId_user15              = 79;
+const int ConfigId_user16              = 80;
+const int ConfigId_user17              = 81;
+const int ConfigId_user18              = 82;
+const int ConfigId_user19              = 83;
+const int ConfigId_user20              = 84;
+const int ConfigId_user21              = 85;
+const int ConfigId_user22              = 86;
+const int ConfigId_user23              = 87;
+const int ConfigId_user24              = 88;
+const int ConfigId_user25              = 89;
+const int ConfigId_user26              = 90;
+const int ConfigId_user27              = 91;
+const int ConfigId_user28              = 92;
+const int ConfigId_user29              = 93;
+const int ConfigId_user30              = 94;
+const int ConfigId_user31              = 95;

@@ -1,0 +1,531 @@
+/*
+<metadata description="Default App for your Lightpad Block, setting it as a MIDI note controller." details="Set the grid size of your Lightpad Block to work with drum and melodic instruments. Set MIDI modes, the scale and many other options to fit around your workflow and the DAWs and plug-ins you use. The size of the grid can be changed by pressing the Mode button on the Lightpad Block" target="Lightpad" tags="MPE;MIDI;Melodic" canEmbedModes="false">
+</metadata>
+*/
+
+#include "../LittleFootLibrary/NoteGridBase.littlefoot"
+#include "../LittleFootLibrary/ClusterSync.littlefoot"
+#include "../LittleFootLibrary/ConfigIds.littlefoot"
+
+#heapsize: 121
+
+//==============================================================================
+bool isSongMakerKit;
+int sbbAddress;
+
+int smkMode;
+const int smkMode_Macro = 0;
+const int smkMode_Sensitivity = 1;
+const int smkMode_XY = 2;
+
+// Macros are 0-127
+int macro0Level;
+int macro1Level;
+int macro2Level;
+int padXpos;
+int padYpos;
+int vSens;
+int xSens;
+int ySens;
+int zSens;
+int lSens;
+int lastReqTime;
+
+const int gradientColour1 = 0x7199ff;
+const int gradientColour2 = 0x6fe6ff;
+
+//==============================================================================
+void initialise()
+{
+    ClusterSync_initialise();
+    NoteGridBase_initialise();
+
+    useMPEDuplicateFilter (true);
+    setLocalConfig (ConfigId_gammaCorrection, 1);
+}
+
+void repaint()
+{
+    ClusterSync_sync();
+    updateSmkMode();
+
+    clearDisplay();
+
+    if (isSongMakerKit && getLocalConfig (ConfigId_mode) == 6)
+    {
+        drawSmkMode();
+        NoteGridBase_isEnabled = false;
+    }
+    else
+    {
+        NoteGridBase_isEnabled = true;
+    }
+
+    NoteGridBase_repaint();
+
+    if (! isConnectedToHost())
+        clearDisplay();
+}
+
+void touchStart (int touchIndex, float x, float y, float z, float vz)
+{
+    NoteGridBase_touchStart (touchIndex, x, y, z, vz);
+
+    if (isSongMakerKit && getLocalConfig (ConfigId_mode) == 6)
+        handleFaderTouch (touchIndex, x, y, z, true);        
+}
+
+void touchMove (int touchIndex, float x, float y, float z, float vz)
+{
+    NoteGridBase_touchMove (touchIndex, x, y, z, vz);
+
+    if (isSongMakerKit && getLocalConfig (ConfigId_mode) == 6)
+        handleFaderTouch (touchIndex, x, y, z, false);
+}
+
+void touchEnd (int touchIndex, float x, float y, float z, float vz)
+{
+    NoteGridBase_touchEnd (touchIndex, x, y, z, vz);
+
+    if (isSongMakerKit && getLocalConfig (ConfigId_mode) == 6)
+        return;
+}
+
+void handleMIDI (int byte0, int byte1, int byte2)
+{
+    if ((byte0 & 0xF0) == 0xB0)
+    {
+        if (byte1 == 107)   macro0Level = byte2;
+        if (byte1 == 109)   macro1Level = byte2;
+        if (byte1 == 111)   macro2Level = byte2;
+        if (byte1 == 113)   padXpos = byte2;
+        if (byte1 == 114)   padYpos = byte2;
+    }
+}
+
+void handleButtonDown (int index)
+{
+    if (index == 0)
+    {
+        int gridSize = getLocalConfig (ConfigId_mode) + 1;
+        
+        if ((isSongMakerKit && gridSize > 6) || (! isSongMakerKit && gridSize > 5))
+            gridSize = 1;
+        
+        if (gridSize == 3)
+            gridSize = 4;
+
+        setLocalConfig (ConfigId_mode, gridSize);
+    }
+}
+
+//==============================================================================
+void ClusterSync_Overrride_clusterChanged()
+{
+    int gridSize = getLocalConfig (ConfigId_mode);
+    setPitchCorrectionEnabled (gridSize == 5);
+
+    if (gridSize == 5)
+    {
+        NoteGridBase_initialisePads (gridSize, getLocalConfig (ConfigId_scale), getLocalConfig (ConfigId_transpose), 
+                                 getLocalConfig (ConfigId_octave), bool (getLocalConfig (ConfigId_hideMode)),
+                                 gridSize * (ClusterSync_xShift + ClusterSync_yShift * gridSize), gridSize, 
+                                 gradientColour1, gradientColour2);
+        return;
+    }
+
+    //Drums octive should start at 36 (1 octive below the default melodic grid)
+    NoteGridBase_initialisePads (gridSize, 18, 0, -1, false,
+                             ClusterSync_clusterWidth * ClusterSync_yPos * gridSize * gridSize + ClusterSync_xPos * gridSize, 
+                             ClusterSync_clusterWidth * gridSize, 
+                             0xFF000000, 0xFF000000);
+
+    if (gridSize == 2)
+    {
+        NoteGridBase_padColour[0] = 0xffad64fb;
+        NoteGridBase_padColour[1] = 0xff54e8fd;
+        NoteGridBase_padColour[2] = 0xff3f89fb;
+        NoteGridBase_padColour[3] = 0xff3c57fb;
+    }
+    else if (gridSize == 3 || gridSize == 4)
+    {
+        NoteGridBase_padColour[0] = 0xff4dfcf0;
+        NoteGridBase_padColour[1] = 0xff4b5eed;
+        NoteGridBase_padColour[2] = 0xff9850e6;
+        NoteGridBase_padColour[3] = 0xfff8676e;
+        NoteGridBase_padColour[4] = 0xff4de7fc;
+        NoteGridBase_padColour[5] = 0xff645fed;
+        NoteGridBase_padColour[6] = 0xffc35ce6;
+        NoteGridBase_padColour[7] = 0xfff87966;
+        NoteGridBase_padColour[8] = 0xff4fbbf7;
+        NoteGridBase_padColour[9] = 0xff8152f8;
+        NoteGridBase_padColour[10] = 0xffe673d2;
+        NoteGridBase_padColour[11] = 0xfffca76a;
+        NoteGridBase_padColour[12] = 0xff4288f7;
+        NoteGridBase_padColour[13] = 0xff8543f8;
+        NoteGridBase_padColour[14] = 0xffe36d94;
+        NoteGridBase_padColour[15] = 0xfffac769;
+    }
+}
+
+//==============================================================================
+void updateSmkMode()
+{
+    // Check for songmaker kit mode
+    if (isSBKArrangement())
+    {
+        if (! isSongMakerKit)
+        {
+            setLocalConfigItemRange (ConfigId_mode, 1, 6);
+            setLocalConfig (ConfigId_mode, 6);
+        }
+            
+        requestSensFromBlock (sbbAddress);
+        isSongMakerKit = true;
+    }
+    else
+    {
+        if (isSongMakerKit)
+        {
+            if (getLocalConfig (ConfigId_mode) == 6)
+                setLocalConfig (ConfigId_mode, 5);
+        
+            setLocalConfigItemRange (ConfigId_mode, 1, 5);
+        }
+        
+        isSongMakerKit = false;
+    }
+}
+
+void requestSensFromBlock (int address)
+{
+    if (getMillisecondCounter() > lastReqTime + 120)
+    {
+        sendMessageToBlock (address, 0x783C53D5, getBlockIDForIndex (0), 0);
+        lastReqTime = getMillisecondCounter();
+    }
+}
+
+void handleMessage (int data0, int data1, int data2)
+{
+    // Sensitivities Response
+    if (data0 == 0x783E53D5)
+    {
+        vSens = (data1 >> 24) & 0x7F;
+        xSens = (data1 >> 16) & 0x7F;
+        ySens = (data1 >> 8)  & 0x7F;
+        zSens = (data1 >> 0)  & 0x7F;
+        lSens = (data2 >> 24) & 0x7F;
+    }
+}
+
+bool isSBKArrangement()
+{
+    bool loopAbove = getBlockTypeForID (getBlockIDOnPort (0)) == 3 || getBlockTypeForID (getBlockIDOnPort (1)) == 3;
+    bool loopBelow = getBlockTypeForID (getBlockIDOnPort (4)) == 3 || getBlockTypeForID (getBlockIDOnPort (5)) == 3;
+    
+    if (getBlockTypeForID (sbbAddress = getBlockIDOnPort (2)) == 6 && loopAbove)    return true;
+    if (getBlockTypeForID (sbbAddress = getBlockIDOnPort (3)) == 6 && loopBelow)    return true;
+    if (getBlockTypeForID (sbbAddress = getBlockIDOnPort (6)) == 6 && loopBelow)    return true;
+    if (getBlockTypeForID (sbbAddress = getBlockIDOnPort (7)) == 6 && loopAbove)    return true;        
+    
+    sbbAddress = 0;
+    
+    return false;
+}
+
+//==============================================================================
+void drawSmkMode()
+{
+    if (smkMode == smkMode_Macro)
+    {
+        fillRect (0xFFFFFFFF, 0, 13, 4, 2);
+        fillRect (0xFF808080, 5, 13, 5, 2);
+        fillRect (0xFF808080, 11, 13, 4, 2);
+        
+         // Macro fader
+        drawFader (macro0Level, 0xFFFFFF00, 0xFFFF8000, 1, 0, 3, 12);
+        drawFader (macro1Level, 0xFFFFFF00, 0xFFFF8000, 6, 0, 3, 12);
+        drawFader (macro2Level, 0xFFFFFF00, 0xFFFF8000, 11, 0, 3, 12);    
+
+    }
+    else if (smkMode == smkMode_Sensitivity)
+    {
+        fillRect (0xFF808080, 0, 13, 4, 2);
+        fillRect (0xFFFFFFFF, 5, 13, 5, 2);
+        fillRect (0xFF808080, 11, 13, 4, 2);
+        
+        // Sensitivity fader
+        drawFader (vSens, 0xFF80FFFF, 0xFF0000FF, 1, 0, 1, 12);
+        drawFader (xSens, 0xFF80FFFF, 0xFF0000FF, 4, 0, 1, 12);
+        drawFader (ySens, 0xFF80FFFF, 0xFF0000FF, 7, 0, 1, 12);
+        drawFader (zSens, 0xFF80FFFF, 0xFF0000FF, 10, 0, 1, 12);
+        drawFader (lSens, 0xFF80FFFF, 0xFF0000FF, 13, 0, 1, 12);
+    }
+    else //smkMode_XY
+    {
+        blendGradientRect (0xFF40C0B0, 0xff88f843, 0xFF40C0B0, 0xFF003060, 0, 0, 15, 12);
+        blendCircle (0xFFFFFFFF, map (float (padXpos), 0.0, 127.0, 0.0, 14.0), map (float (127 - padYpos), 0.0, 127.0, 0.0, 12.0), 1.4, true);
+        
+        fillRect (0xFF000000, 0, 12, 15, 3);
+        fillRect (0xFF808080, 0, 13, 4, 2);
+        fillRect (0xFF808080, 5, 13, 5, 2);
+        fillRect (0xFFFFFFFF, 11, 13, 4, 2);
+    }
+}
+
+void handleFaderTouch (int touchIndex, float x, float y, float z, bool newTouch)
+{
+    // Check buttons
+    if (y > 1.7 && newTouch)
+    {
+        if (x < 0.6)
+            smkMode = smkMode_Macro;
+        else if (x < 1.4)
+            smkMode = smkMode_Sensitivity;
+        else
+            smkMode = smkMode_XY;
+
+        return;
+    }
+
+    // Check faders
+    if (z > 0.001 && y <= 1.7)
+    {
+        int faderValue = 127 - int (map (clamp (0.12, 1.6, y), 0.12, 1.6, 0.0, 127.0));
+
+        if (smkMode == smkMode_Macro)
+        {
+            if (x > 0.13 && x < 0.6 && faderValue != macro0Level)
+            {
+                macro0Level = faderValue;
+                sendCC (getControlChannel(), 107, macro0Level);
+            }
+            if (x > 0.78 && x < 1.25 && faderValue != macro1Level)
+            {
+                macro1Level = faderValue;
+                sendCC (getControlChannel(), 109, macro1Level);
+            }
+            if (x > 1.51 && x < 1.9 && faderValue != macro2Level)
+            {
+                macro2Level = faderValue;
+                sendCC (getControlChannel(), 111, macro2Level);
+            }
+        }
+        else if (smkMode == smkMode_Sensitivity)
+        {
+            if (! sbbAddress)
+                return;
+
+            if (x < 0.4)
+            {
+                vSens = faderValue;
+                setRemoteConfig (sbbAddress, ConfigId_velocitySensitivity, faderValue);
+            }
+            else if (x < 0.8)
+            {
+                xSens = faderValue;
+                setRemoteConfig (sbbAddress, ConfigId_glideSensitivity, faderValue);
+            }
+            else if (x < 1.2)
+            {
+                ySens = faderValue;
+                setRemoteConfig (sbbAddress, ConfigId_slideSensitivity, faderValue);
+            }
+            else if (x < 1.6)
+            {
+                zSens = faderValue;
+                setRemoteConfig (sbbAddress, ConfigId_pressureSensitivity, faderValue);
+            }
+            else
+            {
+                lSens = faderValue;
+                setRemoteConfig (sbbAddress, ConfigId_liftSensitivity, faderValue);
+            }
+        }
+        else //smkMode_XY
+        {
+            handleXYTouch (touchIndex, x, y, z, newTouch);
+        }
+    }
+}
+
+const float padLowX = 0.12;
+const float padHighX = 1.88;
+const float padLowY = 0.12;
+const float padHighY = 1.5;
+
+void handleXYTouch (int touchIndex, float x, float y, float z, bool newTouch)
+{
+    if (touchIndex > 1)
+        return;
+
+    int newPadXpos = int (map (clamp (padLowX, padHighX, x), padLowX, padHighX, 0.0, 127.0));
+    int newPadYpos = 127 - int (map (clamp (padLowY, padHighY, y), padLowY, padHighY, 0.0, 127.0));
+
+    if (padXpos != newPadXpos)
+    {
+        padXpos = newPadXpos;
+        sendCC (getControlChannel(), 113, padXpos);
+    }
+    if (padYpos != newPadYpos)
+    {
+        padYpos = newPadYpos;
+        sendCC (getControlChannel(), 114, padYpos);
+    }
+}
+
+// Assumes 0-127 range
+void drawFader (int level, int topColour, int lowColour, int x, int y, int w, int h)
+{
+    blendGradientRect (topColour, topColour, lowColour, lowColour, x, y, w, h);
+
+    float fLevel = float (h) - (float (h * level) / 127.0);
+    float frac = min (1.0, fLevel - float (int (fLevel)));
+
+    // Draw over absent parts of bar in black
+    blendRect (0xFF404040, x, y, w, int (fLevel));
+    blendRect ((int (frac * 255.0) << 24) |  0x404040, x, y + int (fLevel), w, 1);
+}
+
+/*
+<display backgroundColour="0xFF176694" textColour ="0xFF000000">
+    <pixels>
+        <pixel index="0" colour="0xE936318E" />
+        <pixel index="1" colour="0xE936318E" />
+        <pixel index="2" colour="0xE936318E" />
+        <pixel index="6" colour="0x9CB875D5" />
+        <pixel index="7" colour="0x9CB875D5" />
+        <pixel index="8" colour="0x9CB875D5" />
+        <pixel index="12" colour="0x978B62DD" />
+        <pixel index="13" colour="0x978B62DD" />
+        <pixel index="14" colour="0x978B62DD" />
+        <pixel index="15" colour="0xE936318E" />
+        <pixel index="16" colour="0xE936318E" />
+        <pixel index="17" colour="0xE936318E" />
+        <pixel index="21" colour="0x9CB875D5" />
+        <pixel index="22" colour="0x9CB875D5" />
+        <pixel index="23" colour="0x9CB875D5" />
+        <pixel index="27" colour="0x978B62DD" />
+        <pixel index="28" colour="0x978B62DD" />
+        <pixel index="29" colour="0x978B62DD" />
+        <pixel index="30" colour="0xE936318E" />
+        <pixel index="31" colour="0xE936318E" />
+        <pixel index="32" colour="0xE936318E" />
+        <pixel index="36" colour="0x9CB875D5" />
+        <pixel index="37" colour="0x9CB875D5" />
+        <pixel index="38" colour="0x9CB875D5" />
+        <pixel index="42" colour="0x978B62DD" />
+        <pixel index="43" colour="0x978B62DD" />
+        <pixel index="44" colour="0x978B62DD" />
+        <pixel index="45" colour="0xA0379EEB" />
+        <pixel index="46" colour="0xA0379EEB" />
+        <pixel index="47" colour="0xA0379EEB" />
+        <pixel index="51" colour="0x8A6FB8DD" />
+        <pixel index="52" colour="0x8A6FB8DD" />
+        <pixel index="53" colour="0x8A6FB8DD" />
+        <pixel index="57" colour="0xA42C379A" />
+        <pixel index="58" colour="0xA42C379A" />
+        <pixel index="59" colour="0xA42C379A" />
+        <pixel index="60" colour="0xA0379EEB" />
+        <pixel index="61" colour="0xA0379EEB" />
+        <pixel index="62" colour="0xA0379EEB" />
+        <pixel index="66" colour="0x8A6FB8DD" />
+        <pixel index="67" colour="0x8A6FB8DD" />
+        <pixel index="68" colour="0x8A6FB8DD" />
+        <pixel index="72" colour="0xA42C379A" />
+        <pixel index="73" colour="0xA42C379A" />
+        <pixel index="74" colour="0xA42C379A" />
+        <pixel index="75" colour="0xA0379EEB" />
+        <pixel index="76" colour="0xA0379EEB" />
+        <pixel index="77" colour="0xA0379EEB" />
+        <pixel index="81" colour="0x8A6FB8DD" />
+        <pixel index="82" colour="0x8A6FB8DD" />
+        <pixel index="83" colour="0x8A6FB8DD" />
+        <pixel index="87" colour="0xA42C379A" />
+        <pixel index="88" colour="0xA42C379A" />
+        <pixel index="89" colour="0xA42C379A" />
+        <pixel index="93" colour="0x90386FA1" />
+        <pixel index="94" colour="0x90386FA1" />
+        <pixel index="95" colour="0x90386FA1" />
+        <pixel index="96" colour="0x8C8A41CB" />
+        <pixel index="97" colour="0x8C8A41CB" />
+        <pixel index="98" colour="0x8C8A41CB" />
+        <pixel index="102" colour="0xAD831FD2" />
+        <pixel index="103" colour="0xAD831FD2" />
+        <pixel index="104" colour="0xAD831FD2" />
+        <pixel index="108" colour="0x90386FA1" />
+        <pixel index="109" colour="0x90386FA1" />
+        <pixel index="110" colour="0x90386FA1" />
+        <pixel index="111" colour="0x8C8A41CB" />
+        <pixel index="112" colour="0x8C8A41CB" />
+        <pixel index="113" colour="0x8C8A41CB" />
+        <pixel index="117" colour="0xAD831FD2" />
+        <pixel index="118" colour="0xAD831FD2" />
+        <pixel index="119" colour="0xAD831FD2" />
+        <pixel index="123" colour="0x90386FA1" />
+        <pixel index="124" colour="0x90386FA1" />
+        <pixel index="125" colour="0x90386FA1" />
+        <pixel index="126" colour="0x8C8A41CB" />
+        <pixel index="127" colour="0x8C8A41CB" />
+        <pixel index="128" colour="0x8C8A41CB" />
+        <pixel index="132" colour="0xAD831FD2" />
+        <pixel index="133" colour="0xAD831FD2" />
+        <pixel index="134" colour="0xAD831FD2" />
+        <pixel index="138" colour="0x84C37CE6" />
+        <pixel index="139" colour="0x84C37CE6" />
+        <pixel index="140" colour="0x84C37CE6" />
+        <pixel index="141" colour="0x9A3C75B8" />
+        <pixel index="142" colour="0x9A3C75B8" />
+        <pixel index="143" colour="0x9A3C75B8" />
+        <pixel index="147" colour="0xCC122C6B" />
+        <pixel index="148" colour="0xCC122C6B" />
+        <pixel index="149" colour="0xCC122C6B" />
+        <pixel index="153" colour="0x84C37CE6" />
+        <pixel index="154" colour="0x84C37CE6" />
+        <pixel index="155" colour="0x84C37CE6" />
+        <pixel index="156" colour="0x9A3C75B8" />
+        <pixel index="157" colour="0x9A3C75B8" />
+        <pixel index="158" colour="0x9A3C75B8" />
+        <pixel index="162" colour="0xCC122C6B" />
+        <pixel index="163" colour="0xCC122C6B" />
+        <pixel index="164" colour="0xCC122C6B" />
+        <pixel index="168" colour="0x84C37CE6" />
+        <pixel index="169" colour="0x84C37CE6" />
+        <pixel index="170" colour="0x84C37CE6" />
+        <pixel index="171" colour="0x9A3C75B8" />
+        <pixel index="172" colour="0x9A3C75B8" />
+        <pixel index="173" colour="0x9A3C75B8" />
+        <pixel index="177" colour="0xCC122C6B" />
+        <pixel index="178" colour="0xCC122C6B" />
+        <pixel index="179" colour="0xCC122C6B" />
+        <pixel index="183" colour="0xAE70ACDF" />
+        <pixel index="184" colour="0xAE70ACDF" />
+        <pixel index="185" colour="0xAE70ACDF" />
+        <pixel index="189" colour="0xA670A3CE" />
+        <pixel index="190" colour="0xA670A3CE" />
+        <pixel index="191" colour="0xA670A3CE" />
+        <pixel index="192" colour="0xACDB92E6" />
+        <pixel index="193" colour="0xACDB92E6" />
+        <pixel index="194" colour="0xACDB92E6" />
+        <pixel index="198" colour="0xAE70ACDF" />
+        <pixel index="199" colour="0xAE70ACDF" />
+        <pixel index="200" colour="0xAE70ACDF" />
+        <pixel index="204" colour="0xA670A3CE" />
+        <pixel index="205" colour="0xA670A3CE" />
+        <pixel index="206" colour="0xA670A3CE" />
+        <pixel index="207" colour="0xACDB92E6" />
+        <pixel index="208" colour="0xACDB92E6" />
+        <pixel index="209" colour="0xACDB92E6" />
+        <pixel index="213" colour="0xAE70ACDF" />
+        <pixel index="214" colour="0xAE70ACDF" />
+        <pixel index="215" colour="0xAE70ACDF" />
+        <pixel index="219" colour="0xA670A3CE" />
+        <pixel index="220" colour="0xA670A3CE" />
+        <pixel index="221" colour="0xA670A3CE" />
+        <pixel index="222" colour="0xACDB92E6" />
+        <pixel index="223" colour="0xACDB92E6" />
+        <pixel index="224" colour="0xACDB92E6" />
+    </pixels>
+</display>
+*/

@@ -1,0 +1,1410 @@
+/*
+<metadata description="5x5 grid of notes with MPE compatability and scale settings for use with melodic instruments" target="Lightpad" tags="MPE;MIDI;Melodic" scriptVersion="0">
+</metadata>
+*/
+
+#heapsize: 379
+
+//==============================================================================
+/*
+   Heap layout:
+
+   === 25 x Pad ===
+
+   0     4 byte x 25   colours
+   100   1 byte x 25   note numbers
+
+   === 16 x Touch ===
+
+   125   1 byte x 16   corresponding pad index (0xff if none)
+   141   4 byte x 16   initial x positions (for relative pitchbend)
+   205   4 byte x 16   initial y positions (for relative y axis)
+   269   1 byte x 16   MIDI channel assigned
+
+   === 16 x Channel ===
+
+   285   1 byte x 16   touch to track for this channel (depends on tracking mode)
+
+   === 16 x Touch ===
+
+   301   1 byte x 16   Touch note number
+   317   1 byte x 16   Touch velocity
+   333   1 byte x 16   list of active touch indicies in order of first played to last played
+
+   === 30 x State ===
+   349   1 byte x 30   Current state synced with DAW (Context specific)
+
+*/
+//==============================================================================
+
+int gridSize, padWidth, padSpacing;
+int dimFactor, dimDelay, dimDelta;
+int scaleBitmask;
+int numNotesInScale;
+int activePads;
+int octave;
+int xShift, yShift;
+int transpose;
+int scale;  // Major;Minor;Harmonic Minor;Pentatonic Neutral;Pentatonic Major;Pentatonic Minor;Blues;Dorian;Phrygian;Lydian;Mixolydian;Locrian;Whole Tone;Arabic (A);Arabic (B);Japanese;Ryukyu;8-Tone Spanish;Chromatic;
+bool hideMode;
+
+bool glideLockEnabled;
+int glideLockInitialNote;
+float glideLockTarget;
+int glideLockChannel;
+
+bool gridNeedsRefresh;
+
+int numBlocksInTopology;
+int clusterWidth;
+int clusterHeight;
+int clusterXPos;
+int clusterYPos;
+
+const int maxNumTouches = 16;
+
+//==============================================================================
+bool midiConfigNeedsUpdating;
+int runningRPN;
+
+//==============================================================================
+int currentMacroBank;
+bool smartControlsShouldClose;
+
+//==============================================================================
+const int mixerModeLevelsIndex = 0;
+const int mixerModePansIndex = 1;
+
+const int instrumentModeMacroIndex = 2;
+
+const int InstrumentId_unknown = 0;
+const int InstrumentId_drumsDelimiter = 100;
+
+int currentMode; //holds CC num of current mode
+int mixerMode;
+
+//==============================================================================
+const int Colour_green = 0xFF4CD963;
+const int Colour_greenDark = 0xFFBFFFCB;
+const int Colour_red = 0xFFDA352B;
+const int Colour_white = 0xFFFFFFFF;
+const int Colour_blue = 0xFF4DE1E1;
+const int Colour_blueLight = 0xFF004554;
+const int Colour_yellow = 0xFFFFFC00;
+const int Colour_yellowLight = 0xFF555500;
+const int Colour_amber = 0xFFF7E559;
+
+const int seletedTrackBg = 0xFF434343;
+const int deselectedTrackBg = 0xFF212121;
+
+const int gradientColour1 = Colour_greenDark;
+const int gradientColour2 = Colour_green;
+
+//==============================================================================
+const int CC_instrumentType = 0;
+const int CC_currentNumTracks = 3;
+const int CC_resetHardware = 4;
+const int CC_cycleMode = 5;
+const int CC_currentNumParameters = 7;
+const int CC_smartControlsOpen = 8;
+const int CC_specialCase = 9;
+const int CC_instrumentMode = 102;
+const int CC_mixerMode = 103;
+
+const int CC_variableControlsStart = 10; //context dependent values
+const int CC_trackSelect = CC_variableControlsStart;
+const int CC_level = CC_variableControlsStart + 4;
+const int CC_mute = CC_variableControlsStart + 8;
+const int CC_solo = CC_variableControlsStart + 12;
+const int CC_pan = CC_variableControlsStart + 16;
+
+const int CC_macroParameter = CC_variableControlsStart;
+
+//==============================================================================
+const int SpecialCaseCCVal_identityQuery1 = 8;
+const int SpecialCaseCCVal_identityQuery2 = 9;
+
+//==============================================================================
+const int CC_RPNMSB = 101;
+const int CC_RPNLSB = 100;
+const int CC_dataEntryMSB = 6;
+const int CC_dataEntryLSB = 38;
+
+const int RPN_MPEConfig = 0x0006;
+const int RPN_PitchBendSensitivity = 0x0000;
+
+//==============================================================================
+const int ConfigId_midiStartChannel = 0;
+const int ConfigId_midiEndChannel = 1;
+const int ConfigId_midiUseMPE = 2;
+const int ConfigId_pitchBendRange = 3;
+const int ConfigId_midiChannelRange = 9;
+const int ConfigId_MPEZone = 40;
+
+const int ConfigId_gridSize = 20;
+
+const int ConfigId_Mirror_midiStartChannel = 64;
+const int ConfigId_Mirror_midiEndChannel = 65;
+const int ConfigId_Mirror_midiUseMPE = 66;
+const int ConfigId_Mirror_pitchBendRange = 67;
+const int ConfigId_Mirror_midiChannelRange = 68;
+const int ConfigId_Mirror_MPEZone = 69;
+
+const int ConfigId_Default_isStored = 70;
+const int ConfigId_Default_midiStartChannel = 71;
+const int ConfigId_Default_midiEndChannel = 72;
+const int ConfigId_Default_midiUseMPE = 73;
+const int ConfigId_Default_pitchBendRange = 74;
+const int ConfigId_Default_midiChannelRange = 75;
+const int ConfigId_Default_MPEZone = 76;
+
+const int ConfigId_mixerMode = 77;
+
+const int defaultMidiConfigStored = 0x62a840f2;
+
+//==============================================================================
+const int BlockType_lightpad = 1;
+const int BlockType_seaboard = 6;
+
+//==============================================================================
+const int numMacrosPerBank = 5;
+
+//==============================================================================
+void Pad_setColour (int padIndex, int colour)           { setHeapInt (padIndex * 4, colour); }
+int  Pad_getColour (int padIndex)                       { return getHeapInt (padIndex * 4); }
+void Pad_setNote (int padIndex, int note)               { setHeapByte (padIndex + 100, note); }
+int  Pad_getNote (int padIndex)                         { return getHeapByte (padIndex + 100); }
+void Pad_setActive (int padIndex, bool setActive)       { activePads = setActive ? (activePads | (1 << padIndex)) : (activePads & ~(1 << padIndex)); }
+bool Pad_isActive (int padIndex)                        { return activePads & (1 << padIndex); }
+
+//==============================================================================
+void Touch_setPad (int touchIndex, int padIndex)        { setHeapByte (touchIndex + 125, padIndex); }
+int  Touch_getPad (int touchIndex)                      { return getHeapByte (touchIndex + 125); }
+void Touch_setInitialX (int touchIndex, float initialX) { setHeapInt ((touchIndex * 4) + 141, int (initialX * 1e6)); }
+float Touch_getInitialX (int touchIndex)                { return float (getHeapInt ((touchIndex * 4) + 141)) / 1e6; }
+void Touch_setInitialY (int touchIndex, float initialY) { setHeapInt ((touchIndex * 4) + 205, int (initialY * 1e6)); }
+float Touch_getInitialY (int touchIndex)                { return float (getHeapInt ((touchIndex * 4) + 205)) / 1e6; }
+void Touch_setChannel (int touchIndex, int channel)     { setHeapByte (touchIndex + 269, channel); }
+int  Touch_getChannel (int touchIndex)                  { return getHeapByte (touchIndex + 269); }
+void Touch_setNote (int touchIndex, int noteNumber)     { setHeapByte (touchIndex + 301, noteNumber); }
+int  Touch_getNote (int touchIndex)                     { return getHeapByte (touchIndex + 301); }
+void Touch_setVelocity (int touchIndex, int velocity)   { setHeapByte (touchIndex + 317, velocity); }
+int  Touch_getVelocity (int touchIndex)                 { return getHeapByte (touchIndex + 317); }
+void Touch_setTouchByHistory (int touchIndex, int order){ setHeapByte (order + 333, touchIndex); }
+int  Touch_getTouchByHistory (int order)                { return getHeapByte (order + 333); }
+
+//==============================================================================
+
+void Channel_setTrackedTouch (int channel, int touchIndex) { setHeapByte (channel + 285, touchIndex); }
+int Channel_getTrackedTouch (int channel) { return getHeapByte (channel + 285); }
+
+//==============================================================================
+void State_setValue (int index, int val) { setHeapByte (349 + index, val); }
+int State_getValue (int index) { return getHeapByte (349 + index); }
+
+//==============================================================================
+int findNthNoteInScale (int n)
+{
+    int count = 0;
+
+    for (int pos = 0; pos < 12; ++pos)
+    {
+        if (scaleBitmask & (0x01 << pos))
+        {
+            if (count == n)
+                return pos;
+
+            count++;
+        }
+    }
+
+    return -1;
+}
+
+//==============================================================================
+int getTouchedPad (float x, float y)
+{
+    int col = int (x * 0.5 * float (gridSize));
+    int row = int (y * 0.5 * float (gridSize));
+
+    return (gridSize * row) + col;
+}
+
+bool shouldBeChormatic()
+{
+    return ! hideMode && gridSize == 5;
+}
+
+//==============================================================================
+int getNoteForMelodicPad (int padIndex)
+{
+    // convert pad index (starting top left) to index in note sequence (starting bottom left):
+    int padRow = padIndex / gridSize;
+    int padCol = padIndex % gridSize;
+    int noteIndex = ((gridSize - 1) - padRow) * gridSize + padCol;
+    int lowestNoteIndex = (octave * 12) + 48  + transpose;
+
+    int topologyShift = (xShift * gridSize) + (yShift * gridSize * gridSize);
+
+    if (shouldBeChormatic())
+    {
+        lowestNoteIndex += topologyShift;
+        return noteIndex + lowestNoteIndex;
+    }
+
+    lowestNoteIndex += (topologyShift >= 0 ? (topologyShift / numNotesInScale) : ((topologyShift - numNotesInScale + 1) / numNotesInScale)) * 12;
+
+    int scaleShift = topologyShift % numNotesInScale;
+
+    if (scaleShift < 0)
+        scaleShift += numNotesInScale;
+
+    return findNthNoteInScale ((noteIndex + scaleShift)  % numNotesInScale) + ((noteIndex + scaleShift) / numNotesInScale * 12) + lowestNoteIndex;
+}
+
+//==============================================================================
+int getTrailColour (int padColour)
+{
+    return (padColour == 0xff000000 ? 0xffaaaaaa : blendARGB (0xFFFFFFFF, padColour));
+}
+
+//==============================================================================
+void drawPad (int x, int y, int colour, int bottomRightCornerDarkeningAmount)
+{
+    int dark = blendARGB (colour, bottomRightCornerDarkeningAmount << 24);
+    int mid  = blendARGB (colour, (bottomRightCornerDarkeningAmount / 2) << 24);
+
+    int w = padWidth - padSpacing;
+    blendGradientRect (colour, mid, dark, mid, x * padWidth, y * padWidth, w, w);
+}
+
+int getColourForBank (int index)
+{
+    index %= 4;
+
+    if (index == 0)
+        return Colour_blue;
+    if (index == 1)
+        return Colour_yellow;
+    if (index == 2)
+        return Colour_green;
+
+    return Colour_red;
+}
+
+int getNumMacroBanks()
+{
+    int numBanks = 1;
+
+    while (numBanks * numMacrosPerBank < State_getValue (CC_currentNumParameters))
+        ++numBanks;
+
+    return numBanks;
+}
+
+int getMacroButtonWidth()
+{
+    return 16 / getNumMacroBanks();
+}
+
+void drawPads()
+{
+    if (gridSize == instrumentModeMacroIndex)
+    {
+        int buttonWidth = getMacroButtonWidth();
+
+        for (int i = 0; i < getNumMacroBanks(); ++i)
+        {
+            int colour = (i == currentMacroBank ? 0xFF000000 : 0x75000000) | (getColourForBank (i) & 0x00FFFFFF);
+            blendRect (colour, i * buttonWidth, 13, (buttonWidth == 2 || buttonWidth == 4) ? buttonWidth - 1 : buttonWidth, 2);
+        }
+
+        for (int i = 0; (i < numMacrosPerBank) && (i + (currentMacroBank * numMacrosPerBank) < State_getValue (CC_currentNumParameters)); ++i)
+        {
+            int levelInPixels = int (float (State_getValue (CC_macroParameter + i + (currentMacroBank * numMacrosPerBank))) / 127.0 * 12.0 + 0.5);
+            fillRect (seletedTrackBg, i * 3 + 1, 0, 1, 12);
+            fillRect (getColourForBank (currentMacroBank), i * 3 + 1, 12 - levelInPixels, 1, levelInPixels);
+        }
+    }
+
+    else
+    {
+        int padIndex = 0;
+
+        for (int padY = 0; padY < gridSize; ++padY)
+        {
+            for (int padX = 0; padX < gridSize; ++padX)
+            {
+                int overlayColour = Pad_isActive (padIndex) && gridSize > 1 ? 0x66ffffff : (dimFactor << 24);
+                drawPad (padX, padY, blendARGB (Pad_getColour (padIndex), overlayColour), 0xb8);
+                ++padIndex;
+            }
+        }
+    }
+}
+
+void drawLevelFaders()
+{
+    for (int i = 0; i < 4 && i < State_getValue (CC_currentNumTracks); ++i)
+    {
+        bool selected = State_getValue (CC_trackSelect + i) > 0;
+
+        fillRect (selected ? Colour_white : seletedTrackBg, 0, i * 4, 2, 3); //track select
+
+        if (selected)
+            fillRect (seletedTrackBg, 2, i * 4, 1, 3);
+
+        int levelInPixels = int (((float (State_getValue (CC_level + i)) / 127.0) * 12.0) + 0.5);
+
+        blendGradientRect (Colour_green, Colour_greenDark, Colour_greenDark, Colour_green, 3, i * 4, 12, 3);
+        fillRect (selected ? seletedTrackBg : deselectedTrackBg, 3 + levelInPixels, i * 4, 12 - levelInPixels, 3);
+    }
+}
+
+void drawPanFaders()
+{
+    for (int i = 0; i < 4 & i < State_getValue (CC_currentNumTracks); ++i)
+    {
+        bool selected = State_getValue (CC_trackSelect + i) > 0;
+
+        if (selected)
+            fillRect (seletedTrackBg, 0, i * 4, 15, 3);
+        else
+            fillRect (deselectedTrackBg, 6, i * 4, 9, 3);
+
+        fillRect (State_getValue (CC_mute + i) ?  Colour_blue : Colour_blueLight, 0, i * 4, 2, 3); //mute
+        fillRect (State_getValue (CC_solo + i) ? Colour_yellow : Colour_yellowLight, 3, i * 4, 2, 3); //solo
+
+        float panValue = float (State_getValue (CC_pan + i));
+
+        if (panValue > 63)
+        {
+            int width = (int (map (panValue, 64.0, 127.0, 0.0, 4.5) + 1.0));
+            fillRect (Colour_green, 10, i * 4, width, 3);
+        }
+        else
+        {
+            int start = int (map (panValue, 0.0, 63.0, 0.0, 4.5) + 6.4);
+            fillRect (Colour_green, start, i * 4,  11 - start, 3);
+        }
+    }
+}
+
+//==============================================================================
+void initialiseScale()
+{
+    if (scale == 0)        scaleBitmask = 0xab5;  // major
+    else if (scale == 1)   scaleBitmask = 0x5ad;  // minor
+    else if (scale == 2)   scaleBitmask = 0x9ad;  // harmonic minor
+    else if (scale == 3)   scaleBitmask = 0x4a5;  // pentatonic neutral
+    else if (scale == 4)   scaleBitmask = 0x295;  // pentatonic major
+    else if (scale == 5)   scaleBitmask = 0x4a9;  // pentatomic minor
+    else if (scale == 6)   scaleBitmask = 0x4e9;  // blues
+    else if (scale == 7)   scaleBitmask = 0x6ad;  // dorian
+    else if (scale == 8)   scaleBitmask = 0x5ab;  // phrygian
+    else if (scale == 9)   scaleBitmask = 0xad5;  // lydian
+    else if (scale == 10)  scaleBitmask = 0x6b5;  // mixolydian
+    else if (scale == 11)  scaleBitmask = 0x56b;  // locrian
+    else if (scale == 12)  scaleBitmask = 0x555;  // whole tone
+    else if (scale == 13)  scaleBitmask = 0xb6d;  // arabic (A)
+    else if (scale == 14)  scaleBitmask = 0x575;  // arabic (B)
+    else if (scale == 15)  scaleBitmask = 0x8d1;  // japanese
+    else if (scale == 16)  scaleBitmask = 0x8b1;  // ryukyu
+    else if (scale == 17)  scaleBitmask = 0x57b;  // 8-tone spanish
+    else                   scaleBitmask = 0xfff;  // chromatic
+
+    int n = scaleBitmask;
+    n -= ((n >> 1) & 0x5555);
+    n =  (((n >> 2) & 0x3333) + (n & 0x3333));
+    n =  (((n >> 4) + n) & 0x0f0f);
+    n += (n >> 8);
+    numNotesInScale = n & 0x3f;
+}
+
+int getDrumColourForNote (int note)
+{
+    if (note == 57 || note == 52 || note == 51 || note == 49)
+        return Colour_yellow;
+
+    if (note == 48 || note == 47 || note == 43)
+        return Colour_blue;
+
+    if (note == 46 || note == 42)
+        return Colour_amber;
+
+    if (note == 40 || note == 37 || note == 39)
+        return Colour_green;
+
+    if (note == 36)
+        return Colour_red;
+
+    return 0xFF000000;
+}
+
+//==============================================================================
+void initialisePads()
+{
+    padWidth = 15 / gridSize;
+    padSpacing = gridSize > 1 ? (15 - gridSize * padWidth) / (gridSize - 1) : 0;
+    padWidth += padSpacing;
+    dimFactor = 0;
+    dimDelay = 12;
+    activePads = 0;
+
+    if (gridSize == 4)
+    {
+        //setDrumModePadNotes
+        Pad_setNote (0, 57);
+        Pad_setNote (1, 52);
+        Pad_setNote (2, 51);
+        Pad_setNote (3, 49);
+        Pad_setNote (4, 48);
+        Pad_setNote (5, 47);
+        Pad_setNote (6, 43);
+        Pad_setNote (7, 46);
+        Pad_setNote (8, 42);
+        Pad_setNote (9, 40);
+        Pad_setNote (10, 40);
+        Pad_setNote (11, 42);
+        Pad_setNote (12, 37);
+        Pad_setNote (13, 36);
+        Pad_setNote (14, 36);
+        Pad_setNote (15, 39);
+    }
+    else if (State_getValue (CC_instrumentType) < InstrumentId_drumsDelimiter)
+    {
+        setPitchCorrectionEnabled (true);
+
+        for (int padIndex = 0; padIndex < gridSize * gridSize; ++padIndex)
+        {
+            // note numbers:
+            int note = getNoteForMelodicPad (padIndex);
+            if (note < 0) note = 0;
+
+            Pad_setNote (padIndex, note);
+
+            // pad colours:
+            int padColour = Colour_white;   // tonic = white
+            int noteInScale = mod (note - transpose, 12);
+
+            if (noteInScale != 0) // not the tonic!
+            {
+                if (shouldBeChormatic() && ((0x01 << (mod (noteInScale, 12))) & scaleBitmask) == 0) // not in the scale
+                {
+                    padColour = 0xff000000;
+                }
+                else
+                {
+                    padColour = blendARGB (gradientColour1 | 0xff000000,
+                                          (gradientColour2 & 0x00ffffff) | ((0xff * (noteInScale - 1) / 10) << 24));
+                }
+            }
+
+            Pad_setColour (padIndex, padColour);
+
+            float padSize = (2.0 / float (gridSize));
+            addPitchCorrectionPad (padIndex, note, padSize * (padIndex % gridSize), padSize * (padIndex / gridSize), padSize, padSize);
+        }
+        return;
+    }
+    else if (gridSize == 3)
+    {
+        Pad_setNote (0, 48);
+        Pad_setNote (1, 43);
+        Pad_setNote (2, 49);
+        Pad_setNote (3, 47);
+        Pad_setNote (4, 46);
+        Pad_setNote (5, 42);
+        Pad_setNote (6, 36);
+        Pad_setNote (7, 40);
+        Pad_setNote (8, 39);
+    }
+
+    setPitchCorrectionEnabled (false);
+
+    for (int i = 0; i < 16; ++i)
+        Pad_setColour (i, getDrumColourForNote (Pad_getNote (i)));
+}
+
+//==============================================================================
+
+void initialise()
+{
+    // Enable gamma correction if supported on hardware
+    setLocalConfig (33, 1);
+    useMPEDuplicateFilter (true);
+
+    if (getLocalConfig (ConfigId_Default_isStored) == defaultMidiConfigStored)
+    {
+        for (int i = 0; i < 6; ++i)
+            setLocalConfig (ConfigId_Mirror_midiStartChannel + i, getLocalConfig (getMidiConfigIndex (i)));
+    }
+
+    midiConfigNeedsUpdating = false;
+    gridNeedsRefresh = true;
+    smartControlsShouldClose = false;
+
+    //setConfigsActive
+    for (int i = 0; i < 33; ++i)
+    {
+        if (i == 8 || i == 9 || i == 21 || (i >= 24 && i <= 29))
+            continue;
+
+        setLocalConfigActiveState (i, true, true);
+    }
+
+    for (int i = ConfigId_Default_isStored; i <= ConfigId_Default_MPEZone; ++i)
+        setLocalConfigActiveState (i, false, true);
+
+    //initialiseConfig
+    {
+        clusterWidth = 1;
+        clusterHeight = 1;
+
+        setLocalConfigItemRange (4, -4, 6);
+        setLocalConfigItemRange (7, 0, 2);
+        setLocalConfigItemRange (ConfigId_gridSize, 1, 5);
+        setLocalConfigItemRange (22, 0, 18);
+        setLocalConfigItemRange (24, 0, 14);
+
+        currentMode = CC_instrumentMode;
+        gridSize = 3;
+        updateTopologyShift();
+
+        octave = getLocalConfig(4);
+        scale = 0;
+        hideMode = false;
+    }
+
+    //initialiseTouches
+    for (int touchIndex = 0; touchIndex < maxNumTouches; ++touchIndex)
+    {
+        Touch_setPad (touchIndex, 0xff);
+        Touch_setChannel (touchIndex, 0xff);
+        Touch_setTouchByHistory (0xff, touchIndex);
+
+    }
+
+    //initialiseChannels
+    for (int channel = 0; channel < 16; ++channel)
+        Channel_setTrackedTouch (channel, 0xff);
+
+    //initialiseGlideLock
+    {
+        glideLockEnabled = false;
+        glideLockInitialNote = 0;
+        glideLockTarget = 0.0;
+        glideLockChannel = 0;
+    }
+
+    syncCluster();
+}
+
+//==============================================================================
+void repaint()
+{
+    if (midiConfigNeedsUpdating)
+    {
+        updateMidiConfig();
+    }
+    else // Midi config has been changed from Dashboard
+    {
+        setLocalConfig (ConfigId_Default_isStored, defaultMidiConfigStored);
+
+        for (int i = 0; i < 6; ++i)
+        {
+            if (getLocalConfig (getMidiConfigIndex (i)) != getLocalConfig (ConfigId_Mirror_midiStartChannel + i))
+            {
+                setLocalConfig (ConfigId_Default_midiStartChannel + i, getLocalConfig (getMidiConfigIndex (i)));
+                setLocalConfig (ConfigId_Mirror_midiStartChannel + i, getLocalConfig (getMidiConfigIndex (i)));
+            }
+        }
+    }
+
+    // Ensure valid grid size.
+    if (State_getValue (CC_instrumentType) >= InstrumentId_drumsDelimiter)
+    {
+        if (getLocalConfig (ConfigId_gridSize) == 5)
+            setLocalConfig (ConfigId_gridSize, 4);
+    }
+    else if (State_getValue (CC_instrumentType) != InstrumentId_unknown && getLocalConfig (ConfigId_gridSize) == 4)
+    {
+        setLocalConfig (ConfigId_gridSize, 5);
+    }
+
+    checkConfigUpdates();
+
+    if (gridNeedsRefresh)
+    {
+        //toggleSmartControls
+        if (gridSize == instrumentModeMacroIndex && currentMode == CC_instrumentMode)
+        {
+            smartControlsShouldClose = ! State_getValue (CC_smartControlsOpen);
+
+            if (smartControlsShouldClose)
+                sendCC (0, CC_smartControlsOpen, 127);
+        }
+        else if (smartControlsShouldClose && State_getValue (CC_smartControlsOpen))
+        {
+            sendCC (0, CC_smartControlsOpen, 127);
+            smartControlsShouldClose = false;
+        }
+
+        initialiseScale();
+        initialisePads();
+        gridNeedsRefresh = false;
+    }
+
+    clearDisplay();
+
+    //============================================================
+    // UpdateDimFactor()
+    //============================================================
+    if (activePads || dimDelta)
+    {
+        dimDelta = 0;
+
+        if (dimFactor < 100)
+            dimDelta = 60;
+
+        dimFactor += dimDelta;
+        dimDelay = 3;
+    }
+    else
+    {
+        if (--dimDelay <= 0)
+        {
+            dimFactor -= 24;
+
+            if (dimFactor < 0)
+                dimFactor = 0;
+        }
+    }
+
+    //============================================================
+    if (currentMode == CC_instrumentMode)
+    {
+        if (isConnectedToHost())
+            drawPads();
+
+        // Overlay heatmap
+        drawPressureMap();
+    }
+    else
+    {
+        if (mixerMode == mixerModeLevelsIndex)
+            drawLevelFaders();
+        else
+            drawPanFaders();
+    }
+
+    fadePressureMap();
+
+    //============================================================
+    {
+        int currentBlocksInTopology = getNumBlocksInTopology();
+
+        if (numBlocksInTopology < currentBlocksInTopology)
+            sendCC (0, CC_resetHardware, currentBlocksInTopology);
+
+        numBlocksInTopology = currentBlocksInTopology;
+    }
+}
+
+//==============================================================================
+int getPitchwheelValue (int touchIndex, float x)
+{
+    float scaler = (1.0 / (2.1 / float (gridSize)));
+    int pitchWheelFromDelta = getPitchWheelFromDeltaX (transformPitchForHideMode (touchIndex, scaler * (x - Touch_getInitialX (touchIndex))));
+
+    if (gridSize != 5) //DO NOT MERGE TO DEVELOP: why doesn't hide mode 3 x 3 continue
+        return pitchWheelFromDelta;
+
+    return clamp (0, 16383, pitchWheelFromDelta + getPitchCorrectionPitchBend (touchIndex, pitchWheelFromDelta - 8192));
+}
+
+int getPitchWheelFromDeltaX (float deltaX)
+{
+    // now convert pitchbend in semitones to 14-bit pitchwheel position:
+    float pitchwheel = deltaX > 0.0
+            ? map (deltaX, 0.0, float (getLocalConfig(3)), 8192.0, 16383.0)
+            : map (deltaX, float (-getLocalConfig(3)), 0.0, 0.0, 8192.0);
+
+    return clamp (0, 16383, int (pitchwheel));
+}
+
+float transformPitchForHideMode (int touchIndex, float deltaX)
+{
+    if (shouldBeChormatic() || State_getValue (CC_instrumentType) >= InstrumentId_drumsDelimiter)
+        return deltaX;
+
+    // interpolate between actual pitches of pads left and right to x
+
+    int deltaXLeft = deltaX < 0 ? int (deltaX) - 1 : int (deltaX);
+    int initialPadIndex = Touch_getPad (touchIndex);
+
+    int padIndexLeft = deltaXLeft + initialPadIndex;
+    int padIndexRight = padIndexLeft + 1;
+
+    // rows are incrementing when going down, not up!
+    // if padIndexLeft/Right is outside of the edges of the block, you need
+    // to explicitly add/subtract two rows to compensate.
+    if (mod (padIndexLeft, gridSize) == gridSize - 1)
+    {
+        if (deltaX < 0)
+            padIndexLeft += 2 * gridSize;
+
+        if (deltaX > 0)
+            padIndexRight -= 2 * gridSize;
+    }
+
+    float pitchLeft = getNoteForMelodicPad (padIndexLeft);
+    float pitchRight = getNoteForMelodicPad (padIndexRight);
+
+    float deltaPitch = deltaX - float (deltaXLeft);
+    float pitch = (pitchLeft * (1 - deltaPitch)) + (pitchRight * deltaPitch);
+
+    return pitch - float (Pad_getNote (initialPadIndex));
+}
+
+//==============================================================================
+int getYAxisValue (int touchIndex, float y)
+{
+    if (getLocalConfig (7) == 0)
+        return clamp (0, 127, int (127 - int (y * 63.5)));
+
+    if (getLocalConfig (7) == 1)
+        return clamp (0, 127, int (applyCurve (abs (y - Touch_getInitialY (touchIndex)) * 0.5) * 127)); //getYAxisBipolar
+
+    float yDelta = Touch_getInitialY (touchIndex) - y;
+
+    y = 0.5 + (applyCurve (yDelta * 0.5));
+
+    return clamp (0, 127, int (y * 127));
+}
+
+// Faster with lower value
+float applyCurve (float yDelta)
+{
+    float scaler = float (getLocalConfig (12)) / 127.0;
+
+    if (scaler > 0.0)
+        return yDelta / scaler;
+    else
+        return yDelta;
+}
+
+//==============================================================================
+int getNumTouchesInList()
+{
+    int indexInList = 0;
+
+    while (Touch_getTouchByHistory (indexInList) != 0xff && indexInList < maxNumTouches)
+        ++indexInList;
+
+    return indexInList;
+}
+
+//==============================================================================
+void setGlideLockTarget (int note)
+{
+    float delta = float (note - glideLockInitialNote);
+    glideLockTarget = getPitchWheelFromDeltaX (delta);
+    int glideLockRate = int (map (float (getLocalConfig (18)), 0.0, 127.0, 16.0, 3000.0));
+    sendPitchBend (glideLockChannel, int (glideLockTarget), glideLockRate);
+}
+
+//==============================================================================
+void touchStartPad (int touchIndex, float x, float y, float z, float vz)
+{
+    if (Touch_getPad (touchIndex) != 0xff)
+        return;
+
+    int padIndex = getTouchedPad (x, y);
+    int note = clamp (0, 127, Pad_getNote (padIndex));
+    int colour = Pad_getColour (padIndex);
+    int channel = 0xff;
+    int velocity = clamp (1, 127, int (vz * 127.0));
+    int pressure = clamp (0, 127, int (z * 127.0));
+    bool glideLockConfigEnabled = getLocalConfig (19);
+    bool enableMidiNoteOn = true;
+
+    if (glideLockEnabled || (glideLockConfigEnabled && (gridSize > 1)))
+    {
+        if (! glideLockEnabled)
+        {
+            glideLockEnabled = true;
+            channel = assignChannel (note);
+
+            //==============================================================================
+            // void resetGlideLockToNote (int note, int channel)
+            {
+                glideLockInitialNote = note;
+                glideLockChannel = channel;
+                glideLockTarget = 8192.0;
+            }
+        }
+        else
+        {
+            channel = glideLockChannel;
+            setGlideLockTarget (note);
+            enableMidiNoteOn = false;
+        }
+    }
+
+    if (channel == 0xff)
+        channel = assignChannel (note);
+
+    Touch_setInitialY (touchIndex, y);
+
+    if (enableMidiNoteOn)
+    {
+        if (getLocalConfig (ConfigId_pitchBendRange) > 0)
+        {
+            //if (gridSize == 1)
+            //    sendPitchBend (channel, getPitchWheelFromDeltaX ((x - 1.0) * 12.0));
+
+            sendPitchBend (channel, 8192);
+        }
+
+        if (getLocalConfig (12))
+            sendMIDI (0xb0 | channel, getLocalConfig (6), getYAxisValue (touchIndex, y));
+
+        sendMIDI (0xd0 | channel, pressure);
+
+        sendNoteOn (channel, note, velocity);
+    }
+
+    addPressurePoint (getTrailColour (colour), x, y, z * 32.0);
+
+    Pad_setActive (padIndex, true);
+
+    Touch_setPad (touchIndex, padIndex);
+    Touch_setNote (touchIndex, note);
+    Touch_setChannel (touchIndex, channel);
+    Touch_setVelocity (touchIndex, velocity);
+
+    Channel_setTrackedTouch (channel, touchIndex);
+}
+
+void touchMovePad (int touchIndex, float x, float y, float z, float vz)
+{
+    int padIndex = Touch_getPad (touchIndex);
+
+    if (padIndex == 0xff)
+        return;  // touch was not started.
+
+    int channel = Touch_getChannel (touchIndex);
+
+    if (Channel_getTrackedTouch (channel) != touchIndex)
+        return;  // these are not the touch messages you're looking for...
+
+    int note = Touch_getNote (touchIndex);
+    int pressure = clamp (0, 127, int (z * 127.0));
+
+    sendMIDI (0xd0 | channel, pressure);
+
+    // Piano Mode acts as a fret
+    if (getLocalConfig (17))
+    {
+        int newPadIndex = getTouchedPad (x, y);
+        int newNote = clamp (0, 127, Pad_getNote (newPadIndex));
+
+        if (note != newNote)
+        {
+            if (! glideLockEnabled)
+            {
+                sendNoteOff (channel, note, 0);
+                sendNoteOn (channel, newNote, Touch_getVelocity (touchIndex));
+            }
+            else
+            {
+                setGlideLockTarget (newNote);
+            }
+
+            Touch_setNote (touchIndex, newNote);
+            Touch_setPad (touchIndex, newPadIndex);
+            Pad_setActive (padIndex, false);
+            Pad_setActive (newPadIndex, true);
+        }
+    }
+    else
+    {
+        if (getLocalConfig (12))
+            sendMIDI (0xb0 | channel, getLocalConfig (6), getYAxisValue (touchIndex, y));
+        if (getLocalConfig (ConfigId_pitchBendRange) > 0)
+        {
+            int glideLockDelta = glideLockEnabled ? int (map (glideLockTarget, 0.0, 16383.0, -8191.0, 8192.0)) : 0;
+            sendPitchBend (channel, getPitchwheelValue (touchIndex, x) + glideLockDelta);
+        }
+    }
+
+    addPressurePoint (getTrailColour (Pad_getColour (padIndex)), x, y, z * 32.0);
+}
+
+void touchEndPad (int touchIndex, float x, float y, float z, float vz)
+{
+    int padIndex = Touch_getPad (touchIndex);
+
+    if (padIndex == 0xff)
+        return;  // touch was not started.
+
+    int channel = Touch_getChannel (touchIndex);
+
+    int note = Touch_getNote (touchIndex);
+    int velocity = clamp (0, 127, int (vz * 127.0));
+
+    if (glideLockEnabled)
+    {
+        int numEvents = getNumTouchesInList();
+        int eventNum = numEvents - 1;
+
+        while (Touch_getTouchByHistory (eventNum) != touchIndex)
+            eventNum--;
+
+        if (numEvents == 1)
+        {
+            glideLockEnabled = false;
+            sendPitchBend (glideLockChannel, 8192, 0);
+            sendNoteOff (glideLockChannel, glideLockInitialNote, velocity);
+            Channel_setTrackedTouch (glideLockChannel, 0xff);
+            deassignChannel (glideLockInitialNote, glideLockChannel);
+        }
+        else if (eventNum == (numEvents - 1))
+        {
+            int previousTouch = Touch_getTouchByHistory (eventNum - 1);
+            int previousNote  = Touch_getNote (previousTouch);
+
+            setGlideLockTarget (previousNote);
+            Channel_setTrackedTouch (glideLockChannel, previousTouch);
+            Pad_setActive (Touch_getPad (previousTouch), true);
+        }
+    }
+    else
+    {
+        sendNoteOff (channel, note, velocity);
+        Channel_setTrackedTouch (channel, 0xff);
+        deassignChannel (note, channel);
+    }
+
+    Pad_setActive (padIndex, false);
+
+    Touch_setPad (touchIndex, 0xff);
+    Touch_setChannel (touchIndex, 0xff);
+}
+
+//==============================================================================
+//Splits lightpad into 4, adjusting for the uneven spacing.
+int getTrack (float y)
+{
+    return int (1.875 * y + 0.125);
+}
+
+void sendCurrentState (int index)
+{
+    sendCC (0, index, State_getValue (index));
+}
+
+void levelTouched (int touchIndex, float x, float y)
+{
+    if (Touch_getInitialX (touchIndex) >= 0.3)
+        sendCC (0, 14 + getTrack (Touch_getInitialY (touchIndex)), clamp (0, 127, int ((x - 0.4) * 83.0))); //scaled slightly high to ensure top value is hit
+}
+
+void touchStartLevels (int touchIndex, float x, float y, float z, float vz)
+{
+    //track select
+    if (x < 0.3)
+    {
+        sendCC (0, 10 + getTrack (y), 127);
+    }
+    else
+    {
+        sendCurrentState (CC_level + getTrack (y));
+        levelTouched (touchIndex, x, y);
+    }
+}
+
+//==============================================================================
+void panTouched (int touchIndex, float x, float y)
+{
+    if (Touch_getInitialX (touchIndex) >= 0.7)
+        sendCC (0, 26 + getTrack (Touch_getInitialY (touchIndex)), int (clamp (0, 127, int ((x - 0.8) *  115.0))));
+}
+
+void touchStartPans (int touchIndex, float x, float y, float z, float vz)
+{
+    //mute
+    if (x < 0.3)
+    {
+        sendCC (0, 18 + getTrack (y), 127);
+    }
+
+    //solo
+    else if (x >= 0.4 && x < 0.7)
+    {
+        sendCC (0, 22 + getTrack (y), 127);
+    }
+
+    else
+    {
+        sendCurrentState (CC_pan + getTrack (y));
+        panTouched (touchIndex, x, y);
+    }
+}
+
+//==============================================================================
+
+int getMacroCC (float x)
+{
+    return CC_macroParameter + (currentMacroBank * numMacrosPerBank) + int (x * (float (numMacrosPerBank) / 2.0));
+}
+
+void touchMacros (int touchIndex, float x, float y)
+{
+    if (Touch_getInitialY (touchIndex) <= 1.7)
+    {
+        y = clamp  (0.1, 1.7, y) - 0.1;
+        y = 1.6 - y;
+        sendCC (0, getMacroCC (x), int (map (y, 0.0, 1.6, 0.0, 127.0)));
+    }
+}
+
+void touchStartMacros (int touchIndex, float x, float y, float z, float vz)
+{
+    //track scroller
+    if (y > 1.7)
+    {
+        x *= 7.5;
+        float buttonWidth = float (getMacroButtonWidth());
+        float buttonEnd = buttonWidth - (buttonWidth == 5.0 ? 0.0 : 0.5);
+
+        for (int i = 0; buttonEnd <= 16.0; ++i)
+        {
+            if (x <= buttonEnd)
+            {
+                currentMacroBank = i;
+                return;
+            }
+
+            buttonEnd += buttonWidth;
+        }
+    }
+    else
+    {
+        sendCurrentState (getMacroCC (x));
+        touchMacros (touchIndex, x, y);
+    }
+}
+
+//==============================================================================
+void touchStart (int touchIndex, float x, float y, float z, float vz)
+{
+    //==============================================================================
+    // addTouchToList (int touchIndex)
+    {
+        int endOfList = getNumTouchesInList();
+
+        if (endOfList < maxNumTouches)
+            Touch_setTouchByHistory (touchIndex, endOfList);
+    }
+
+    //==============================================================================
+    Touch_setInitialX (touchIndex, x);
+    Touch_setInitialY (touchIndex, y);
+
+    if (currentMode == CC_instrumentMode)
+    {
+        if (gridSize == instrumentModeMacroIndex)
+            touchStartMacros (touchIndex, x, y, z, vz);
+        else
+            touchStartPad (touchIndex, x, y, z, vz);
+    }
+
+    else
+    {
+        if (mixerMode == mixerModeLevelsIndex)
+            touchStartLevels (touchIndex, x, y, z, vz);
+        else
+            touchStartPans (touchIndex, x, y, z, vz);
+    }
+}
+
+void touchMove (int touchIndex, float x, float y, float z, float vz)
+{
+    if (currentMode == CC_instrumentMode)
+    {
+        if (gridSize == instrumentModeMacroIndex)
+            touchMacros (touchIndex, x, y);
+        else
+            touchMovePad (touchIndex, x, y, z, vz);
+    }
+
+    else
+    {
+        if (mixerMode == mixerModeLevelsIndex)
+            levelTouched (touchIndex, x, y);
+        else
+            panTouched (touchIndex, x, y);
+    }
+}
+
+void touchEnd (int touchIndex, float x, float y, float z, float vz)
+{
+    touchEndPad (touchIndex, x, y, z, vz);
+
+    //removeTouchFromList
+    for (int i = 0; i < getNumTouchesInList(); ++i)
+    {
+        if (Touch_getTouchByHistory (i) == touchIndex)
+        {
+            //deleteFromTouchList
+            for (int j = i; j < maxNumTouches - 1; ++j)
+                Touch_setTouchByHistory (Touch_getTouchByHistory (j + 1), j);
+
+            Touch_setTouchByHistory (0xff, maxNumTouches - 1);
+            return;
+        }
+    }
+}
+
+void handleButtonDown (int index)
+{
+    if (index == 0)
+    {
+        if (currentMode == CC_instrumentMode && gridSize == instrumentModeMacroIndex)
+        {
+            setLocalConfig (ConfigId_mixerMode, mixerModeLevelsIndex);
+            sendCC (0, CC_mixerMode, 127);
+        }
+
+        else if (currentMode == CC_mixerMode && mixerMode == mixerModePansIndex)
+        {
+            setLocalConfig (ConfigId_gridSize, 3);
+            sendCC (0, CC_instrumentMode, 127);
+        }
+
+        else
+        {
+            cycleCurrentMode();
+        }
+    }
+}
+
+void updateTopologyShift ()
+{
+    int xShiftLast = xShift;
+    int yShiftLast = yShift;
+    xShift = 0;
+    yShift = 0;
+
+    if (getClusterWidth() > 1 || getClusterHeight() > 1)
+    {
+        if (isMasterInCurrentCluster())
+        {
+            xShift = getHorizontalDistFromMaster() / 2;
+            yShift = getVerticalDistFromMaster() / 2;
+        }
+        else
+        {
+            int octStart = ((getClusterWidth() - 1) / 2);
+            xShift = (getClusterXpos() - octStart);
+
+            octStart = ((getClusterHeight() - 1) / 2);
+            yShift = (getClusterYpos() - octStart);
+        }
+    }
+
+    if (clusterWidth != getClusterWidth() || clusterXPos != getClusterXpos() || xShiftLast != xShift)
+    {
+        if ((isMasterInCurrentCluster() && isMasterBlock()) || ! getClusterXpos())
+            syncCluster();
+
+        gridNeedsRefresh = true;
+
+        clusterWidth = getClusterWidth();
+        clusterXPos = getClusterXpos();
+    }
+    else if (clusterHeight != getClusterHeight() || clusterYPos != getClusterYpos() || yShiftLast != yShift)
+    {
+        if ((isMasterInCurrentCluster() && isMasterBlock()) || ! getClusterXpos())
+            syncCluster();
+
+        gridNeedsRefresh = true;
+
+        clusterHeight = getClusterHeight();
+        clusterYPos = getClusterYpos();
+    }
+}
+
+void syncCluster()
+{
+    for (int i = 4; i <= 23; ++i)
+    {
+        if (i == 8 || i == 9)
+            continue;
+
+        sendConfigItemToCluster (i);
+    }
+
+    sendConfigItemToCluster (ConfigId_mixerMode);
+}
+
+void sendConfigItemToCluster (int itemId)
+{
+    for (int i = 0; i < getNumBlocksInCurrentCluster(); ++i)
+        if (getBlockIdForBlockInCluster(i) != getBlockIDForIndex(0))
+            setRemoteConfig (getBlockIdForBlockInCluster(i), itemId, getLocalConfig (itemId));
+}
+
+int getMidiConfigIndex (int continuiousIndex)
+{
+    if (continuiousIndex == 4)
+        return 9;
+
+    if (continuiousIndex == 5)
+        return 40;
+
+    return continuiousIndex;
+}
+
+void updateMidiConfig()
+{
+    for (int i = 0; i < 6; ++i)
+        setLocalConfig (getMidiConfigIndex (i), getLocalConfig (ConfigId_Mirror_midiStartChannel + i));
+
+    for (int i = 1; i < getNumBlocksInTopology(); ++i)
+    {
+        int blockId = getBlockIDForIndex (i);
+        int blockType = getBlockTypeForID (getBlockIDForIndex (i));
+
+        if (blockType == BlockType_lightpad || blockType == BlockType_seaboard)
+        {
+            for (int i = 0; i < 6; ++i)
+                setRemoteConfig (blockId, getMidiConfigIndex (i), getLocalConfig (getMidiConfigIndex (i)));
+        }
+    }
+
+    midiConfigNeedsUpdating = false;
+}
+
+void checkConfigUpdates()
+{
+    if (scale != getLocalConfig (22)
+        || gridSize != getLocalConfig (ConfigId_gridSize)
+        || octave != getLocalConfig (4)
+        || hideMode != getLocalConfig (23)
+        || transpose != getLocalConfig (5)
+        || mixerMode != getLocalConfig (ConfigId_mixerMode))
+    {
+        scale = getLocalConfig (22);
+        gridSize = getLocalConfig (ConfigId_gridSize);
+        octave = getLocalConfig (4);
+        hideMode = getLocalConfig (23);
+        transpose = getLocalConfig (5);
+        mixerMode = getLocalConfig (ConfigId_mixerMode);
+
+        syncCluster();
+        gridNeedsRefresh = true;
+    }
+
+    updateTopologyShift();
+}
+
+void cycleCurrentMode()
+{
+    if (currentMode == CC_instrumentMode)
+    {
+        int localGridSize = getLocalConfig (ConfigId_gridSize);
+        setLocalConfig (ConfigId_gridSize, ++localGridSize);
+
+        if (localGridSize > 5 || (State_getValue (CC_instrumentType) >= InstrumentId_drumsDelimiter && localGridSize > 4))
+            setLocalConfig (ConfigId_gridSize, instrumentModeMacroIndex);
+    }
+
+    else //mixer mode
+    {
+        setLocalConfig (ConfigId_mixerMode, int (! mixerMode));
+    }
+}
+
+// New RPN handler implementation, ported from original code above.
+void handleRPN (bool isRegistered, int channel, int parameter, int msb, int lsb)
+{
+    if (parameter == RPN_MPEConfig)
+    {
+        if (msb == 0) //single channel
+        {
+            setLocalConfig (ConfigId_Mirror_midiUseMPE, 2);
+            setLocalConfig (ConfigId_Mirror_midiStartChannel, channel + 1);
+        }
+        else
+        {
+            setLocalConfig (ConfigId_Mirror_midiUseMPE, 1);
+            setLocalConfig (ConfigId_Mirror_MPEZone, channel == 0 ? 0 : 1);
+            setLocalConfig (ConfigId_Mirror_midiChannelRange, msb);
+        }
+
+        midiConfigNeedsUpdating = true;
+    }
+    else if (parameter == RPN_PitchBendSensitivity)
+    {
+        setLocalConfig (ConfigId_Mirror_pitchBendRange, msb);
+        midiConfigNeedsUpdating = true;
+    }
+}
+
+void handleMIDI (int byte0, int byte1, int byte2)
+{
+    if (byte2 == 127)
+    {
+        if (byte1 == CC_instrumentMode || byte1 == CC_mixerMode)
+            currentMode = byte1;
+
+        if (byte1 == CC_cycleMode)
+            cycleCurrentMode();
+    }
+
+    if (byte1 < 30)
+    {
+        State_setValue (byte1, byte2);
+    }
+
+    if (byte1 == CC_currentNumParameters)
+    {
+        currentMacroBank = 0;
+    }
+
+    if (byte1 == CC_instrumentType)
+    {
+        if (byte2 == InstrumentId_unknown)
+        {
+            for (int i = 0; i < 6; ++i)
+                setLocalConfig (ConfigId_Mirror_midiStartChannel + i, getLocalConfig (ConfigId_Default_midiStartChannel + i));
+
+            midiConfigNeedsUpdating = true;
+        }
+
+        gridNeedsRefresh = true;
+    }
+
+    if (byte1 == CC_specialCase)
+    {
+        // Message sent are a uniquly identify for this script.
+        // First number is a unique for this script / response
+        // Second number is used on all apple control surface scripts
+        // 3rd number is reserved for version
+
+        if (byte2 == SpecialCaseCCVal_identityQuery1)
+            sendMessageToHost (0x32dbb49, 0x6f5b047, 0x0);
+
+        if (byte2 == SpecialCaseCCVal_identityQuery2)
+            sendMessageToHost (0xbc3fe2e, 0x6f5b047, 0x0);
+    }
+}
+
+void handleMessage (int param1, int param2, int param3)
+{
+    // handle message like a midi message so API host can also get the id
+    handleMIDI (param1, param2, param3);
+}

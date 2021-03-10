@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mode name="Melodics">
+  <variable name="MIDI Mode" value="MPE"/>
+  <variable name="No. MIDI Channels" value="15"/>
+  <variable name="MPE Zone" value="Lower Zone"/>
+  <variable name="Config 64" value="1"/>
+  <variable name="Config 65" value="127"/>
+  <variable name="Config 66" value="1694368562"/>
+  <variable name="Config 67" value="1694368570"/>
+  <variable name="Config 68" value="1694368578"/>
+  <variable name="Config 69" value="1694368586"/>
+  <variable name="Config 70" value="1694368594"/>
+  <variable name="Config 71" value="1694368602"/>
+  <variable name="Config 72" value="1694368610"/>
+  <variable name="Config 73" value="1694368618"/>
+  <variable name="Config 74" value="1694368626"/>
+  <variable name="Config 75" value="1694368634"/>
+  <variable name="Config 76" value="-16776705"/>
+  <variable name="Config 77" value="-16776705"/>
+  <variable name="Config 78" value="-16776705"/>
+  <variable name="Config 79" value="-16776705"/>
+  <variable name="Config 80" value="-65536"/>
+  <variable name="Config 81" value="-16776705"/>
+  <variable name="Config 82" value="-16776705"/>
+  <variable name="Config 83" value="-16776705"/>
+  <variable name="Config 84" value="-16776705"/>
+  <variable name="Config 85" value="-16776705"/>
+  <variable name="Config 86" value="-1"/>
+  <variable name="Config 87" value="-1"/>
+  <variable name="Config 88" value="-1"/>
+  <variable name="Config 89" value="-1"/>
+  <variable name="Config 90" value="-1"/>
+  <variable name="Config 91" value="-1"/>
+  <variable name="Config 92" value="-1"/>
+  <variable name="Config 93" value="-1"/>
+  <variable name="Config 94" value="-1"/>
+  <variable name="Config 95" value="-1"/>
+</mode>
