@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mode name="Multi Channel">
+  <variable name="UseMPE" value="false"/>
+  <variable name="MIDIStartChannel" value="1"/>
+  <variable name="MIDIEndChannel" value="16"/>
+  <variable name="GlideAndSlideTrackingMode" value="Last Played"/>
+  <variable name="pressMode" value="Channel Pressure"/>
+  <variable name="PressureTrackingMode" value="Last Played"/>
+  <variable name="Octave" value="0"/>
+  <variable name="Transpose" value="0"/>
+  <variable name="PitchBendRange" value="48"/>
+  <variable name="StrikeSensitivity" value="101"/>
+  <variable name="GlideSensitivity" value="127"/>
+  <variable name="SlideSensitivity" value="127"/>
+  <variable name="PressureSensitivity" value="127"/>
+  <variable name="LiftSensitivity" value="127"/>
+  <variable name="TouchFader1CC" value="107"/>
+  <variable name="TouchFader2CC" value="109"/>
+  <variable name="TouchFader3CC" value="111"/>
+  <variable name="XYPadXaxisCC" value="113"/>
+  <variable name="XYPadYaxisCC" value="114"/>
+  <variable name="PedalInputCC1" value=" 64 Sustain Pedal"/>
+</mode>

@@ -1,0 +1,149 @@
+//==============================================================================
+//
+// RPN Handler
+//
+// Will provide callbacks or RPN and NRPN messages. 
+//
+// Pass all messages to'RPNHandler_processMidi()' which will return true if the 
+// message was consumed.
+//
+// Program that includes this must implement -
+// void RPNHandler_Callback_rpnReceived (int param, int value) {}
+// void RPNHandler_Callback_nrpnReceived (int param, int value) {}
+//
+//==============================================================================
+
+//==============================================================================
+//
+// Example (uncomment to run)
+//
+//==============================================================================
+//
+// const int Colour_yellow = 0xFFFFFF00;
+// const int Colour_blue = 0xFF0000FF;
+// 
+// void initialise()
+// {
+//     clearDisplay();
+// }
+//
+// void handleMIDI (int byte0, int byte1, int byte2)
+// {
+//     RPNHandler_processMidi (byte0, byte1, byte2);
+// }
+// 
+// void paintRPN (int param, int value)
+// {
+//     clearDisplay();
+//     drawNumber (param, Colour_blue, 2, 1);
+//     drawNumber (value, Colour_yellow, 2, 9);
+// }
+// 
+// void RPNHandler_Callback_rpnReceived (int param, int value)
+// {
+//     paintRPN (param, value);
+// }
+// 
+// void RPNHandler_Callback_nrpnReceived (int param, int value)
+// {
+//     paintRPN (param, value);
+// }
+// 
+//==============================================================================
+
+
+const int MidiStatus_ControlChange = 0xB;
+
+const int CC_dataMSB = 6;
+const int CC_dataLSB = 38;
+
+const int CC_dataIncrement = 96;
+const int CC_dataDecrement = 97;
+
+const int CC_nrpnLSB = 98;
+const int CC_nrpnMSB = 99;
+
+const int CC_rpnLSB = 100;
+const int CC_rpnMSB = 101;
+
+const int CC_maskMSB = 0x3F80; // mask top 7 bits of 14 bit value
+
+int RPNHandler_nrpnParameter;
+int RPNHandler_rpnParameter;
+int RPNHandler_dataValue;
+
+bool RPNHandler_nrpnSelected;
+
+bool RPNHandler_processMidi (int byte0, int byte1, int byte2)
+{
+    int status = byte0 >> 4;
+    
+    if (status != MidiStatus_ControlChange)
+        return false;
+    
+    if (byte1 == CC_nrpnMSB)
+    {
+        RPNHandler_nrpnSelected = true;
+        RPNHandler_nrpnParameter = byte2 << 7;
+        return true;
+    }
+        
+    if (byte1 == CC_nrpnLSB)
+    {
+        RPNHandler_nrpnSelected = true;
+        RPNHandler_nrpnParameter = (RPNHandler_nrpnParameter & CC_maskMSB) | byte2;
+        return true;
+    }
+    
+    if (byte1 == CC_rpnMSB)
+    {
+        RPNHandler_nrpnSelected = false;
+        RPNHandler_rpnParameter = byte2 << 7;
+        return true;
+    }
+        
+    if (byte1 == CC_rpnLSB)
+    {
+        RPNHandler_nrpnSelected = false;
+        RPNHandler_rpnParameter = (RPNHandler_rpnParameter & CC_maskMSB) | byte2;
+        return true;
+    }
+    
+    if (byte1 == CC_dataMSB)
+    {
+        RPNHandler_dataValue = byte2 << 7;
+        RPNHandler_triggerCallback();
+        return true;
+    }
+    
+    if (byte1 == CC_dataLSB)
+    {
+        RPNHandler_dataValue = (RPNHandler_dataValue & CC_maskMSB) | byte2;
+        RPNHandler_triggerCallback();
+        return true;
+    }
+    
+    if (byte1 == CC_dataIncrement)
+    {
+        ++RPNHandler_dataValue;
+        RPNHandler_triggerCallback();
+        return true;
+    }
+    
+    if (byte1 == CC_dataDecrement)
+    {
+        --RPNHandler_dataValue;
+        RPNHandler_triggerCallback();
+        return true;
+    }
+    
+    return false;
+}
+
+void RPNHandler_triggerCallback()
+{
+    if (RPNHandler_nrpnSelected)
+        RPNHandler_Callback_nrpnReceived (RPNHandler_nrpnParameter, RPNHandler_dataValue);
+    else
+        RPNHandler_Callback_rpnReceived (RPNHandler_nrpnParameter, RPNHandler_dataValue);
+}

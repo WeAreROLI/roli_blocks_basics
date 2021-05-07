@@ -1,0 +1,178 @@
+/*
+<metadata description="Seaboard Block Default Script" target="Seaboard" tags="MPE;MIDI;Melodic">
+<modes>
+<mode name="Default"/>
+
+</modes>
+</metadata>
+*/
+
+// TODO: Set octave on other Blocks in Cluster
+
+const float octaveDownXloc = 0.0;
+const float octaveDownYloc = 0.0;
+
+const float octaveUpXloc = 5.75;
+const float octaveUpYloc = 0.0;
+
+const float octaveSwitchXSize = 0.3;
+const float octaveSwitchYSize = 0.2;
+
+bool shiftMode;
+int  presetIndex;
+int  topOctaveShift;
+int  clusterWidthLast;
+int  xPos;
+
+void initialise()
+{
+    setLocalConfigActiveState (0, true, true);
+	setLocalConfigActiveState (1, true, true);
+	setLocalConfigActiveState (2, true, true);
+	setLocalConfigActiveState (3, true, true);
+	setLocalConfigActiveState (4, true, true);
+	setLocalConfigActiveState (5, true, false);
+	setLocalConfigActiveState (6, true, true);
+	setLocalConfigActiveState (7, true, true);
+	setLocalConfigActiveState (10, true, true);
+	setLocalConfigActiveState (11, true, true);
+	setLocalConfigActiveState (12, true, true);
+	setLocalConfigActiveState (13, true, true);
+	setLocalConfigActiveState (14, true, true);
+	setLocalConfigActiveState (15, true, true);
+	setLocalConfigActiveState (16, true, true);
+	setLocalConfigActiveState (17, true, true);
+	setLocalConfigActiveState (18, true, true);
+	setLocalConfigActiveState (19, true, true);
+	setLocalConfigActiveState (24, true, true);
+	setLocalConfigActiveState (30, true, true);
+	setLocalConfigActiveState (31, true, true);
+	setLocalConfigActiveState (32, true, true);
+    
+    setLocalConfigItemRange (4, -4, 6);
+    setLocalConfigItemRange (24, 0, 14);
+    shiftMode = false;
+    presetIndex = 0;
+    topOctaveShift = 255;
+    clusterWidthLast = 1;
+    updateTopologyShift();
+}
+
+void sendConfigItemToCluster (int itemId)
+{
+    if (getClusterWidth() < 2)
+        return;
+    
+    int numBlocksInCluster = getNumBlocksInCurrentCluster();
+    
+    for (int i = 0; i < numBlocksInCluster; ++i)
+        setRemoteConfig (getBlockIdForBlockInCluster(i), itemId, getLocalConfig (itemId));
+}
+
+void updateTopologyShift ()
+{
+    if (getClusterWidth() > 1)
+    {
+        int newTopOct = 0;
+
+        int octStart = ((getClusterWidth() - 1) / 2);    
+        newTopOct = (getClusterXpos() - octStart) * 2;
+        
+        if (topOctaveShift != newTopOct)
+        {
+            topOctaveShift = newTopOct;
+            setLocalConfig (8, topOctaveShift);
+        }
+        if ((! getClusterXpos() && ! isMasterInCurrentCluster()) || (isMasterInCurrentCluster() && isMasterBlock()))
+		{
+			if (clusterWidthLast != getClusterWidth() || xPos != getClusterXpos())
+			{
+				clusterWidthLast = getClusterWidth();				
+				sendConfigItemToCluster (4);
+			}
+		}
+		
+		xPos = getClusterXpos();
+    }
+    else if (topOctaveShift != 0)
+    {
+        topOctaveShift = 0;
+        setLocalConfig (8, topOctaveShift);
+    }
+}
+
+void repaint()
+{
+    updateTopologyShift();
+    
+    if (! getBlockIDOnPort(0))
+    {
+        fillPixel (0x404040, 0, 0);
+        fillPixel (0x404040, 1, 0);
+    }
+    else
+    {
+        fillPixel (0, 0, 0);
+        fillPixel (0, 1, 0);
+    }
+}
+
+void touchStart (int index, float x, float y, float z, float vz)
+{
+    // Handle octave switches
+    if (x >= octaveDownXloc && x <= octaveDownXloc + octaveSwitchXSize && 
+        y >= octaveDownYloc && y <= octaveDownYloc + octaveSwitchYSize)
+    {
+        if (shiftMode && presetIndex)
+            sendMIDI (0xC0, --presetIndex);
+        else
+        {
+            setLocalConfig (4, getLocalConfig (4) - 1);
+        }
+    }
+    else if (x >= octaveUpXloc && x <= octaveUpXloc + octaveSwitchXSize && 
+             y >= octaveUpYloc && y <= octaveUpYloc + octaveSwitchYSize)
+    {
+        if (shiftMode && presetIndex < 127)
+            sendMIDI (0xC0, ++presetIndex);
+        else
+        {
+            setLocalConfig (4, getLocalConfig (4) + 1);
+        }
+    }
+    else
+    {    
+        // All other touches are treated as seaboard playing
+        handleTouchAsSeaboard (index);
+    }
+}
+
+void handleRequest (int id, int blockID)
+{
+    if (id == 0)    sendMessageToBlock (blockID, 0x783E, 0, getBlockIDForIndex (0));
+}
+
+void handleMessage (int data0, int data1, int data2)
+{
+    if (data0 == 0x783C)   handleRequest (data1, data2);   // Request message
+    
+    // Sensitivities Response
+    if (data0 == 0x783C53D5)
+    {
+        int data1out = (getLocalConfig (10) << 24) | (getLocalConfig (11) << 16) | (getLocalConfig (12) << 8) | (getLocalConfig (13));
+        int data2out = (getLocalConfig (14) << 24);
+        
+        sendMessageToBlock (data1, 0x783E53D5, data1out, data2out);
+    }
+}
+
+
+void handleButtonDown (int index)
+{
+    if (index == 0) shiftMode = true;
+}
+
+void handleButtonUp (int index)
+{
+    if (index == 0) shiftMode = false;
+}

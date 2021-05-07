@@ -1,0 +1,538 @@
+/*
+<metadata description="Learn to play your Lightpad with Melodics." details="Learn to play your Lightpad and improve your finger drumming skills by using this app. Specially designed to work with Melodics, it will help you become an expert as quickly as possible." tags="Learn;Game;Controller" target="Lightpad" canEmbedModes="false">
+</metadata>
+*/
+
+const int maxNumPads = 16;
+const int maxNumTouches = 16;
+
+//Heap layout
+const int padColourStart = 0; // 4 byte * 16
+const int flashColourStart = 64; // 4 byte * 16
+const int midiNoteStart = 128; // 4 byte * 16
+
+const int baseMidiNote = 36;
+
+bool isValidPadIndex (int index)
+{
+    return index >= 0 && index < maxNumPads;
+}
+
+void setPadColour (int index, int colour)
+{
+    if (! isValidPadIndex (index))
+        return;
+        
+    setHeapInt (padColourStart + index * 4, colour) ;
+}
+
+int getPadColour (int index)
+{
+    if (! isValidPadIndex (index))
+        return 0;
+        
+    return getHeapInt (padColourStart + index * 4);
+}
+
+void setPadRGB (int index, int rgb)
+{
+    rgb = (rgb & 0xFFFFFF) | (getPadAlpha (index) << 24);   
+    setPadColour (index, rgb);
+}
+
+void setPadAlpha (int index, int alpha)
+{
+    setHeapByte (padColourStart + 3 + index * 4, alpha);
+}
+
+int getPadAlpha (int index)
+{
+    return getHeapByte (padColourStart + 3 + index * 4);
+}
+
+//==============================================================================
+void setFlashColour (int index, int colour)
+{
+    if (! isValidPadIndex (index))
+        return;
+        
+    setHeapInt (flashColourStart + index * 4, colour);
+}
+
+int getFlashColour (int index)
+{
+    if (! isValidPadIndex (index))
+        return 0;
+        
+    return getHeapInt (flashColourStart + index * 4);
+}
+
+void setFlashAlpha (int index, int alpha)
+{
+    setHeapByte (flashColourStart + 3 + index * 4, alpha);
+}
+
+int getFlashAlpha (int index)
+{
+    return getHeapByte (flashColourStart + 3 + index * 4);
+}
+
+//==============================================================================
+void setMidiNote (int touchIndex, int midiNote)
+{
+    if (touchIndex >= maxNumTouches || touchIndex < 0)
+        return;
+        
+    setHeapByte (midiNoteStart + touchIndex, midiNote);
+}
+
+int getMidiNote (int touchIndex)
+{
+    if (touchIndex >= maxNumTouches || touchIndex < 0)
+        return 0;
+        
+    return getHeapByte (midiNoteStart + touchIndex);
+}
+
+//==============================================================================
+
+// MIDI CC CONSTS
+const int nrpnMsb = 99;
+const int nrpnLsb = 98;
+const int dataEntryMsb = 6;
+
+// NRPN PARAMETERS
+const int param_gridSize = 0;
+const int param_colour = 1;
+const int param_enablePad = 2;
+const int param_cuePad = 3;
+const int param_flashColour = 4;
+const int param_showLogo = 5;
+
+const int padCuedAlpha = 0xFF;
+const int padEnabledAlpha = 0xA0;
+
+int selectedParam;
+int selectedPad;
+int gridSize;
+bool shouldDrawLogo;
+
+//==============================================================================
+
+void initialise()
+{
+    setLocalConfig (33, 1);
+    
+    selectedParam = -1;
+    selectedPad = -1;
+    gridSize = 4;
+    
+    for (int i = 0; i < maxNumPads; ++i)
+    {
+        setPadColour (i, getColour (0));
+        setPadAlpha (i, padEnabledAlpha);
+        setFlashColour (i, getColour (0));
+        setFlashAlpha (i, 0x00);
+    }
+
+    shouldDrawLogo = true;
+}
+
+int getSpacer()
+{
+    return ((gridSize == 2 || gridSize == 4) ? 1 : 0);
+}
+
+void repaint()
+{
+    if (shouldDrawLogo) 
+    {
+        drawLogo();
+        return;
+    }
+
+    int padWidth = 15 / gridSize;
+    int spacer = getSpacer(); 
+    
+    for (int y = 0; y < gridSize; ++y)
+    {
+        int yPos = 15 - ((y) * (padWidth + spacer) + padWidth);
+        
+        for (int x = 0; x < gridSize; ++x)
+        {
+            int padIndex = y * gridSize + x;
+            int xPos = x * (padWidth + spacer);
+            int colour = blendARGB (getPadColour (padIndex), getFlashColour (padIndex));
+            
+            fillRect (0xFF000000, xPos, yPos, padWidth + spacer, padWidth + spacer);
+            blendRect (colour, xPos, yPos, padWidth, padWidth);
+            
+            setFlashAlpha (padIndex, max (0, getFlashAlpha (padIndex) - 15));            
+        }
+    }
+}
+
+void drawLogo() 
+{
+    int yellow = 0xFFF0CC30;
+    int black = 0xFF000000;
+    
+    fillRect(yellow, 0, 0, 15, 15);
+    fillRect(black, 2, 2, 2, 7);
+    fillRect(black, 11, 2, 2, 11);
+    fillRect(black, 2, 10, 2, 1);
+    fillRect(black, 2, 12, 2, 1);
+    fillRect(black, 4, 3, 1, 4);
+    fillRect(black, 10, 3, 1, 4);
+    fillRect(black, 5, 5, 1, 4);
+    fillRect(black, 9, 5, 1, 4);
+    fillRect(black, 6, 7, 1, 4);
+    fillRect(black, 8, 7, 1, 4);
+    fillRect(black, 7, 9, 1, 4);
+}
+
+int getColour (int index)
+{
+    if (index == 0)
+        return 0xFF000000 //black
+    if (index == 1)
+        return 0xFFFFFFFF //white
+    if (index == 2)
+        return 0xFF505050 //Grey
+    if (index == 3)
+        return 0xFFFF0005 //Red
+    if (index == 4)
+        return 0xFFFF9400 //Orange
+    if (index == 5)
+        return 0xFFFFFF00 //Yellow
+    if (index == 6)
+        return 0xFF84FF1B //Green
+    if (index == 7)
+        return 0xFF2AA1FF //Blue
+    if (index == 8)
+        return 0xFFC000C0 //purple
+        
+    return 0xFF000000 // invalid
+}
+
+void touchStart (int index, float x, float y, float z, float vz)
+{    
+    float offset = float (getSpacer()) / 15.0;
+        
+    int col = int (map (x, 0.0 - offset, 2.0 + offset, 0.0, float (gridSize)));
+    int row = int (map (2.0 - y, 0.0 - offset, 2.0 + offset, 0.0, float (gridSize)));
+    
+    int midiNote = baseMidiNote + col + row * gridSize;
+    setMidiNote (index, midiNote); 
+    
+    sendNoteOn (0, midiNote, int (map (vz, 0.0, 0.1, 0.0, 127.0)));
+}
+
+void touchMove (int index, float x, float y, float z, float vz)
+{
+}
+
+void touchEnd (int index, float x, float y, float z, float vz)
+{
+    sendNoteOff (0, getMidiNote (index), int (map (vz, 0.0, 0.1, 0.0, 127.0)));
+}
+
+// Kept for backwards compatibility.
+void handleMIDI (int byte0, int byte1, int byte2)
+{
+    if (byte0 != 0xB0)
+        return;
+    
+    shouldDrawLogo = false;
+
+    if (byte1 == nrpnMsb)
+    {
+        selectedParam = byte2;
+
+        if (byte2 == param_showLogo)
+        {
+            shouldDrawLogo = true;
+            return;
+        }
+        
+        if (selectedPad < 0)
+            return;
+        
+        if (byte2 == param_enablePad)
+            setPadAlpha (selectedPad, padEnabledAlpha);
+            
+        else if (byte2 == param_cuePad)
+            setPadAlpha (selectedPad, padCuedAlpha);            
+            
+        return;
+    }
+    
+    if (byte1 == nrpnLsb)
+    {
+        selectedPad = byte2;
+        return;
+    }
+    
+    if (byte1 == dataEntryMsb)
+    {        
+        if (selectedParam < 0)
+            return;
+            
+        if (selectedParam == param_gridSize)
+        {
+            if (byte2 >= 1 & byte2 <= 4)
+                gridSize = byte2;
+                
+            return;
+        }
+        
+        if (selectedPad < 0)
+            return;
+            
+        if (selectedParam == param_colour)
+        {
+            setPadRGB (selectedPad, getColour (byte2));
+            setPadAlpha (selectedPad, padEnabledAlpha);
+        }
+        else if (selectedParam == param_flashColour)
+        {
+            setFlashColour (selectedPad, getColour (byte2));
+        }
+    }
+}
+
+// New RPN handler implementation, ported from original code above.
+void handleRPN (bool isRegistered, int channel, int parameter, int msb, int lsb)
+{
+    shouldDrawLogo = false;
+
+    selectedParam = (parameter >> 7) & 0x7f;    // MS 7-bits
+    selectedPad = parameter & 0x7f;             // LS 7-bits
+
+    if (selectedParam == param_showLogo)
+    {
+        shouldDrawLogo = true;
+        return;
+    }
+
+    if (selectedPad < 0)
+        return;
+
+    if (selectedParam == param_enablePad)
+        setPadAlpha (selectedPad, padEnabledAlpha);
+    else if (selectedParam == param_cuePad)
+        setPadAlpha (selectedPad, padCuedAlpha);
+
+    if (selectedParam == param_gridSize)
+    {
+        if (msb >= 1 & msb <= 4)
+            gridSize = msb;
+
+        return;
+    }
+
+    if (selectedParam < 0)
+        return;
+
+    if (selectedParam == param_colour)
+    {
+        setPadRGB (selectedPad, getColour (msb));
+        setPadAlpha (selectedPad, padEnabledAlpha);
+    }
+    else if (selectedParam == param_flashColour)
+    {
+        setFlashColour (selectedPad, getColour (msb));
+    }
+}
+
+/*
+<display backgroundColour="0xFF5700AE" textColour ="0xFFFFFFFF">
+    <pixels>
+        <pixel index="0" colour="0xFFF0CC30" />
+        <pixel index="1" colour="0xFFF0CC30" />
+        <pixel index="2" colour="0xFFF0CC30" />
+        <pixel index="3" colour="0xFFF0CC30" />
+        <pixel index="4" colour="0xFFF0CC30" />
+        <pixel index="5" colour="0xFFF0CC30" />
+        <pixel index="6" colour="0xFFF0CC30" />
+        <pixel index="7" colour="0xFFF0CC30" />
+        <pixel index="8" colour="0xFFF0CC30" />
+        <pixel index="9" colour="0xFFF0CC30" />
+        <pixel index="10" colour="0xFFF0CC30" />
+        <pixel index="11" colour="0xFFF0CC30" />
+        <pixel index="12" colour="0xFFF0CC30" />
+        <pixel index="13" colour="0xFFF0CC30" />
+        <pixel index="14" colour="0xFFF0CC30" />
+        <pixel index="15" colour="0xFFF0CC30" />
+        <pixel index="16" colour="0xFFF0CC30" />
+        <pixel index="17" colour="0xFFF0CC30" />
+        <pixel index="18" colour="0xFFF0CC30" />
+        <pixel index="19" colour="0xFFF0CC30" />
+        <pixel index="20" colour="0xFFF0CC30" />
+        <pixel index="21" colour="0xFFF0CC30" />
+        <pixel index="22" colour="0xFFF0CC30" />
+        <pixel index="23" colour="0xFFF0CC30" />
+        <pixel index="24" colour="0xFFF0CC30" />
+        <pixel index="25" colour="0xFFF0CC30" />
+        <pixel index="26" colour="0xFFF0CC30" />
+        <pixel index="27" colour="0xFFF0CC30" />
+        <pixel index="28" colour="0xFFF0CC30" />
+        <pixel index="29" colour="0xFFF0CC30" />
+        <pixel index="30" colour="0xFFF0CC30" />
+        <pixel index="31" colour="0xFFF0CC30" />
+
+        <pixel index="34" colour="0xFFF0CC30" />
+        <pixel index="35" colour="0xFFF0CC30" />
+        <pixel index="36" colour="0xFFF0CC30" />
+
+        <pixel index="38" colour="0xFFF0CC30" />
+        <pixel index="39" colour="0xFFF0CC30" />
+        <pixel index="40" colour="0xFFF0CC30" />
+
+        <pixel index="43" colour="0xFFF0CC30" />
+        <pixel index="44" colour="0xFFF0CC30" />
+        <pixel index="45" colour="0xFFF0CC30" />
+        <pixel index="46" colour="0xFFF0CC30" />
+        <pixel index="47" colour="0xFFF0CC30" />
+        <pixel index="48" colour="0xFFF0CC30" />
+        <pixel index="49" colour="0xFFF0CC30" />
+        <pixel index="50" colour="0xFFF0CC30" />
+        <pixel index="51" colour="0xFFF0CC30" />
+
+        <pixel index="53" colour="0xFFF0CC30" />
+        <pixel index="54" colour="0xFFF0CC30" />
+        <pixel index="55" colour="0xFFF0CC30" />
+
+        <pixel index="58" colour="0xFFF0CC30" />
+        <pixel index="59" colour="0xFFF0CC30" />
+        <pixel index="60" colour="0xFFF0CC30" />
+        <pixel index="61" colour="0xFFF0CC30" />
+
+        <pixel index="64" colour="0xFFF0CC30" />
+        <pixel index="65" colour="0xFFF0CC30" />
+
+        <pixel index="69" colour="0xFFF0CC30" />
+        <pixel index="70" colour="0xFFF0CC30" />
+
+        <pixel index="73" colour="0xFFF0CC30" />
+        <pixel index="74" colour="0xFFF0CC30" />
+        <pixel index="75" colour="0xFFF0CC30" />
+        <pixel index="76" colour="0xFFF0CC30" />
+        <pixel index="77" colour="0xFFF0CC30" />
+        <pixel index="78" colour="0xFFF0CC30" />
+        <pixel index="79" colour="0xFFF0CC30" />
+        <pixel index="80" colour="0xFFF0CC30" />
+
+        <pixel index="84" colour="0xFFF0CC30" />
+        <pixel index="85" colour="0xFFF0CC30" />
+
+        <pixel index="88" colour="0xFFF0CC30" />
+        <pixel index="89" colour="0xFFF0CC30" />
+        <pixel index="90" colour="0xFFF0CC30" />
+        <pixel index="91" colour="0xFFF0CC30" />
+
+        <pixel index="94" colour="0xFFF0CC30" />
+
+        <pixel index="97" colour="0xFFF0CC30" />
+
+        <pixel index="100" colour="0xFFF0CC30" />
+
+        <pixel index="103" colour="0xFFF0CC30" />
+        <pixel index="104" colour="0xFFF0CC30" />
+        <pixel index="105" colour="0xFFF0CC30" />
+        <pixel index="106" colour="0xFFF0CC30" />
+
+        <pixel index="109" colour="0xFFF0CC30" />
+
+        <pixel index="112" colour="0xFFF0CC30" />
+
+        <pixel index="115" colour="0xFFF0CC30" />
+
+        <pixel index="118" colour="0xFFF0CC30" />
+        <pixel index="119" colour="0xFFF0CC30" />
+        <pixel index="120" colour="0xFFF0CC30" />
+        <pixel index="121" colour="0xFFF0CC30" />
+
+        <pixel index="126" colour="0xFFF0CC30" />
+        <pixel index="127" colour="0xFFF0CC30" />
+        <pixel index="128" colour="0xFFF0CC30" />
+
+        <pixel index="133" colour="0xFFF0CC30" />
+        <pixel index="134" colour="0xFFF0CC30" />
+        <pixel index="135" colour="0xFFF0CC30" />
+        <pixel index="136" colour="0xFFF0CC30" />
+
+        <pixel index="141" colour="0xFFF0CC30" />
+        <pixel index="142" colour="0xFFF0CC30" />
+        <pixel index="143" colour="0xFFF0CC30" />
+
+        <pixel index="148" colour="0xFFF0CC30" />
+        <pixel index="149" colour="0xFFF0CC30" />
+        <pixel index="150" colour="0xFFF0CC30" />
+        <pixel index="151" colour="0xFFF0CC30" />
+
+        <pixel index="155" colour="0xFFF0CC30" />
+        <pixel index="156" colour="0xFFF0CC30" />
+        <pixel index="157" colour="0xFFF0CC30" />
+        <pixel index="158" colour="0xFFF0CC30" />
+        <pixel index="159" colour="0xFFF0CC30" />
+
+        <pixel index="163" colour="0xFFF0CC30" />
+        <pixel index="164" colour="0xFFF0CC30" />
+        <pixel index="165" colour="0xFFF0CC30" />
+        <pixel index="166" colour="0xFFF0CC30" />
+
+        <pixel index="170" colour="0xFFF0CC30" />
+        <pixel index="171" colour="0xFFF0CC30" />
+        <pixel index="172" colour="0xFFF0CC30" />
+        <pixel index="173" colour="0xFFF0CC30" />
+        <pixel index="174" colour="0xFFF0CC30" />
+
+        <pixel index="178" colour="0xFFF0CC30" />
+        <pixel index="179" colour="0xFFF0CC30" />
+        <pixel index="180" colour="0xFFF0CC30" />
+        <pixel index="181" colour="0xFFF0CC30" />
+
+        <pixel index="184" colour="0xFFF0CC30" />
+        <pixel index="185" colour="0xFFF0CC30" />
+        <pixel index="186" colour="0xFFF0CC30" />
+        <pixel index="187" colour="0xFFF0CC30" />
+        <pixel index="188" colour="0xFFF0CC30" />
+        <pixel index="189" colour="0xFFF0CC30" />
+        <pixel index="190" colour="0xFFF0CC30" />
+
+        <pixel index="193" colour="0xFFF0CC30" />
+        <pixel index="194" colour="0xFFF0CC30" />
+        <pixel index="195" colour="0xFFF0CC30" />
+        <pixel index="196" colour="0xFFF0CC30" />
+        <pixel index="197" colour="0xFFF0CC30" />
+        <pixel index="198" colour="0xFFF0CC30" />
+        <pixel index="199" colour="0xFFF0CC30" />
+        <pixel index="200" colour="0xFFF0CC30" />
+        <pixel index="201" colour="0xFFF0CC30" />
+        <pixel index="202" colour="0xFFF0CC30" />
+        <pixel index="203" colour="0xFFF0CC30" />
+        <pixel index="204" colour="0xFFF0CC30" />
+        <pixel index="205" colour="0xFFF0CC30" />
+        <pixel index="206" colour="0xFFF0CC30" />
+        <pixel index="207" colour="0xFFF0CC30" />
+        <pixel index="208" colour="0xFFF0CC30" />
+        <pixel index="209" colour="0xFFF0CC30" />
+        <pixel index="210" colour="0xFFF0CC30" />
+        <pixel index="211" colour="0xFFF0CC30" />
+        <pixel index="212" colour="0xFFF0CC30" />
+        <pixel index="213" colour="0xFFF0CC30" />
+        <pixel index="214" colour="0xFFF0CC30" />
+        <pixel index="215" colour="0xFFF0CC30" />
+        <pixel index="216" colour="0xFFF0CC30" />
+        <pixel index="217" colour="0xFFF0CC30" />
+        <pixel index="218" colour="0xFFF0CC30" />
+        <pixel index="219" colour="0xFFF0CC30" />
+        <pixel index="220" colour="0xFFF0CC30" />
+        <pixel index="221" colour="0xFFF0CC30" />
+        <pixel index="222" colour="0xFFF0CC30" />
+        <pixel index="223" colour="0xFFF0CC30" />
+        <pixel index="224" colour="0xFFF0CC30" />
+    </pixels>
+</display>
+*/

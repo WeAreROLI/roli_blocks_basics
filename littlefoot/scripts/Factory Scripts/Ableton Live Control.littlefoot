@@ -1,0 +1,723 @@
+/*
+<metadata description="Instantly launch clips and control instruments in Ableton Live!" details="This App connects with Ableton Live allowing you to use your Lightpad Block as a clip launcher, interact with a drum rack or play melodic instruments. Based on the track you are on, use the Mode button to switch between the clip launcher and either the drum rack or melodic grid." target="Lightpad" tags="Live;MIDI;Controller" canEmbedModes="false" />
+*/
+
+#include "../LittleFootLibrary/NoteGridBase.littlefoot"
+#include "../LittleFootLibrary/ConfigIds.littlefoot"
+#include "../LittleFootLibrary/ClusterSync.littlefoot"
+
+#heapsize: 121
+
+int currentMode;
+
+const int modeMessageChannel = 15;
+
+const int clipLaunchMode  = 60;
+const int melodicMode     = 61;
+const int drumMode        = 62;
+const int disabledMode    = 63;
+
+const int gradientColour1 = 0xFF5082F1;
+const int gradientColour2 = 0xFFE84AB8;
+
+const int Colour_grey   = 0xFF161316;
+const int Colour_purple = 0xFF8A2FFF;
+const int Colour_black  = 0xFF000000;
+const int Colour_white  = 0xFFFFFFFF;
+const int Colour_yellow = 0xFFFFFF40;
+const int Colour_orange = 0xFFFFBB44;
+
+int clipInfo[16];
+int drumColour[16];
+int colourTable[64];
+
+int navState;
+int sceneState;
+
+float tempo;
+float fadePosition;
+int lastFadeUpdateTime;
+
+/* -----------------------------------------------------------------------------
+ * MODES THAT COME FROM LIVE
+ * These are sent on differing channels. So if you get a message on channel 0x01 
+ * that means different behaviour from a message on channel 0x02
+ * ---------------------------------------------------------------------------*/
+const int solidChannel = 0x00;
+const int blinkChannel = 0x01;
+const int pulseChannel = 0x02;
+
+/* -----------------------------------------------------------------------------
+ * CLIPS MIDI NOTE LAYOUT
+ *
+ * With the extendability of the lightpad block script, we are looking at having 
+ * a static 9x9 session, with a midi note map that is always like so:
+ *
+ * 80 81 82 83 84 85 86 87 88
+ * 70 71 72 73 74 75 76 77 78
+ * 60 61 62 63 64 65 66 67 68
+ * 50 51 52 53 54 55 56 57 58
+ * 40 41 42 43 44 45 46 47 48
+ * 30 31 32 33 34 35 36 37 38
+ * 20 21 22 23 24 25 26 27 28
+ * 10 11 12 13 14 15 16 17 18
+ *  0  1  2  3  4  5  6  7  8
+ *
+ *
+ * and such that a group of two horizontally grouped lightpad blocks always sends 
+ * and receives the top 4 rows of this matrix and a group of two vertically grouped 
+ * lightpad blocks always sends and receives the leftmost 4 columns
+ *
+ * ---------------------------------------------------------------------------*/
+
+// -----------------------------------------------------------------------------
+void initialise()
+{
+    initialiseColours();
+    NoteGridBase_initialise();
+    ClusterSync_initialise();
+    navState = 0xFFFFFFFF;
+    tempo = 120.0;
+    setMode (disabledMode);
+
+    setLocalConfig (ConfigId_midiUseMPE, 2);
+    setLocalConfig (ConfigId_midiStartChannel, 1);
+
+    for (int i = 0; i < 3; ++i)
+        setLocalConfigActiveState (i, false, false);
+
+    // Send note-offs for all channels & notes to avoid stuck notes
+    // when modifying dynamic variables from the sidepanel.
+    sendMIDI (0xb0 | 0, 120, 0); // All sound off msg
+    sendMIDI (0xb0 | 0, 123, 0); // All notes off msg
+}
+
+void ClusterSync_Overrride_clusterChanged()
+{
+    setMode (currentMode);
+}
+
+void repaint()
+{
+    if (currentMode == clipLaunchMode)
+        updateClipFadeDuration();
+
+    ClusterSync_sync();
+    clearDisplay();
+
+    if (currentMode == disabledMode)
+    {
+        blendGradientRect (Colour_yellow, Colour_yellow, Colour_orange, Colour_orange, 0, 0, 15, 15);
+
+        for (int i = 0; i < 4; ++i)
+        {
+            fillRect(Colour_black, i * 2, 4, 1, 7);
+            fillRect(Colour_black, 8, i * 2 + 4, 7, 1);
+        }
+    }
+
+    int drumPadIndex = 12;
+    int drumColorIndex;
+
+    for (int x = 0; x < 4; ++x)
+    {
+        for (int y = 0; y < 4; ++y)
+        {
+            if (currentMode == clipLaunchMode)
+            {
+                int clipIndex = y * 4 + x;
+                
+                int colour = getClipAltARGB (clipIndex) & 0x00FFFFFF;
+                int clipMode = getClipMode (clipIndex);
+            
+                if (clipMode == solidChannel)
+                {
+                    colour = getClipMainARGB (clipIndex);
+                }
+                else if (clipMode == pulseChannel)
+                {
+                    colour = colour | (int (fadePosition * 255.0) << 24);
+                }
+                else
+                {
+                    colour = colour | (clampFadePositionToBlink() << 24);
+                }
+                
+                NoteGridBase_padColour[y * 5 + 5 + x] = colour;
+            }
+            
+            if (currentMode == drumMode)
+                NoteGridBase_padColour[drumPadIndex] = (isMasterBlock() ? drumColour[drumColorIndex] : 0xff4dfcf0);
+                
+            ++drumPadIndex;
+            ++drumColorIndex;
+        }
+
+        drumPadIndex -= 8;
+    }
+
+    NoteGridBase_repaint();
+
+    if (currentMode == clipLaunchMode)
+    {
+        for (int i = 0; i < 5; ++i)
+        {
+            fillRect (Colour_black, i * 3 + 2, 0, 1, 15);
+            fillRect (Colour_black, 0, i * 3 + 2, 15, 1);
+        }
+
+        // All clips stop
+        fillRect (0xFF0000, 12, 0, 3, 2);
+
+        //Clip navigator
+        fillRect (Colour_grey, 0, 0, 2, 1);
+        fillRect (Colour_grey, 3, 1, 2, 1);
+        fillRect (Colour_grey, 7, 0, 1, 2);
+        fillRect (Colour_grey, 9, 0, 1, 2);
+
+        //Scene buttons
+        for (int i = 0; i < 4; ++i)
+        {
+            int sY = 12 - (i * 3);
+            if ((sceneState >> i) & 1)
+            {
+                fillRect (0xFF000000, 12, sY, 3, 2);
+                blendRect (makeARGB (clampFadePositionToBlink(), 0x8A, 0x2F, 0xFF), 12, sY, 3, 2);
+            }
+            else
+            {
+                fillRect (0xFF8A2FFF, 12, sY, 3, 2);
+            }
+        }
+    }
+}
+
+void touchStart (int index, float x, float y, float z, float vz)
+{
+    if (currentMode == disabledMode)
+    {
+        handleButtonDown (0);
+        handleButtonUp (0);
+    }
+    
+    if (currentMode == clipLaunchMode)
+        vz = 1.0;
+
+    NoteGridBase_touchStart (index, x, y, z, vz);
+}
+
+void touchMove (int index, float x, float y, float z, float vz)
+{
+    NoteGridBase_touchMove (index, x, y, z, vz);
+}
+
+void touchEnd (int index, float x, float y, float z, float vz)
+{
+    if (currentMode == clipLaunchMode)
+        vz = 0.0;
+
+    NoteGridBase_touchEnd (index, x, y, z, vz);
+}
+
+/* -----------------------------------------------------------------------------
+ * BUTTON HANDLERS
+ * ---------------------------------------------------------------------------*/ 
+void handleButtonDown (int index)
+{
+    sendCC (0, 127, 127);
+}
+
+void handleButtonUp (int index)
+{
+    sendCC (0, 127, 0);
+}
+
+/* -----------------------------------------------------------------------------
+ * MIDI HANDLERS
+ * ---------------------------------------------------------------------------*/
+ 
+void handleMIDI (int byte0, int byte1, int byte2)
+{
+    int status = byte0 & 0xF0;
+    int channel = byte0 & 0x0F;
+
+    if (status == 0x90 && byte2 == 0)
+        status = 0x80;
+
+    if (status == 0xB0 && channel == modeMessageChannel && byte2 > 0)
+        setMode (byte1);
+
+    if (status == 0xE0)
+        setTempo (map (float (((byte2 & 0x7F) << 7) + (byte1 & 0x7F)), 0.0, float (0x3FFF), 20.0, 250.0));
+
+    if (status == 0x90 || status == 0x80)
+        handleNoteMessage (channel, byte1, byte2);
+}
+
+void handleNoteMessage (int channel, int note, int velocity)
+{
+    if (currentMode == melodicMode)
+        return;
+
+    if (currentMode == drumMode && note > 35 && note < 52)
+        drumColour[note - 36] = getVelocityColour (velocity);
+
+    if (note < 50)
+        return;
+
+    // Clip & scene launcher
+    if (note < 90)
+    {
+        // Scene
+        if (note % 10 == 9)
+        {
+            int idx = (note / 9) - 6;
+            sceneState = (channel == 0 ? sceneState & ~(1 << idx) : sceneState | (1 << idx));
+        }
+
+        // Clip
+        else
+        {
+            int row = 3 - (note / 10 - 5);
+            int col = note % 10;
+            int index = row * 4 + col;
+
+            if (index < 16)
+                setClipInfo (index, channel, velocity);
+        }
+    }
+
+    // Navigation
+    else if (note < 94)
+        NoteGridBase_padColour[note - 90] = (velocity == 0 ? Colour_grey : Colour_purple);
+}
+
+void setMode (int mode)
+{
+    if (! isMasterBlock() && mode == clipLaunchMode)
+        mode = disabledMode;
+
+    currentMode = mode;
+
+    NoteGridBase_isEnabled = mode != disabledMode;
+    NoteGridBase_pressureMapEnabled = mode == melodicMode;
+
+    setPitchCorrectionEnabled (mode == melodicMode);
+    setLocalConfig (ConfigId_gammaCorrection, int (mode == melodicMode || mode == disabledMode));
+    useMPEDuplicateFilter (mode != clipLaunchMode);
+
+    if (mode == clipLaunchMode)
+    {
+        NoteGridBase_initialisePads (5, 18, 0, 0, false, 0, 0, Colour_grey, Colour_grey);
+        
+        for (int y = 0; y < 5; ++y)
+        {
+            // Navigation and clip launcher
+            for (int x = 0; x < 4; ++x)
+                NoteGridBase_Pad_setNote (y * 5 + x, 90 - (y * 10) + x);
+            
+            // Scene buttons
+            NoteGridBase_Pad_setNote (y * 5 + 4, 90 - (y * 10) + 9);
+        }
+
+        // Stop all clips
+        NoteGridBase_Pad_setNote (4, 127);
+    }
+
+    if (mode == melodicMode)
+    {
+        int gridSize = 5;
+        setLocalConfig (ConfigId_mode, gridSize);
+        NoteGridBase_initialisePads (gridSize, getLocalConfig (ConfigId_scale), getLocalConfig (ConfigId_transpose), 
+                                 getLocalConfig (ConfigId_octave), bool (getLocalConfig (ConfigId_hideMode)),
+                                 gridSize * (ClusterSync_xShift + ClusterSync_yShift * gridSize), gridSize, 
+                                 gradientColour1, gradientColour2);
+    }
+
+    if (mode == drumMode)
+    {
+        int gridSize = 4;
+        setLocalConfig (ConfigId_mode, gridSize);
+        NoteGridBase_initialisePads (4, 18, 0, -1, false,
+                                 (getHorizontalDistFromMaster() + getVerticalDistFromMaster()) * 8,
+                                 gridSize,
+                                 0xFFFF0000, 0xFFFF0000);
+    }
+}
+
+/* -----------------------------------------------------------------------------
+ * VARIABLES INTERACTION
+ * ---------------------------------------------------------------------------*/ 
+void setTempo (float newTempo)
+{
+    tempo          = ceil (newTempo * 100.0) / 100.0;
+    fadePosition   = 1.0;
+}
+
+/* -----------------------------------------------------------------------------
+ * CLIP FADE ANIMATION
+ * ---------------------------------------------------------------------------*/ 
+void updateClipFadeDuration()
+{
+    int timeNow = getMillisecondCounter();
+
+    float beatTimeInMsec = ((60000.0 / tempo) * 4);
+
+    float fp = (timeNow - lastFadeUpdateTime) / (beatTimeInMsec / 2);
+    while (fp >= 1.0)
+        fp -= 1.0;
+
+    fadePosition  = 1.0 - fp;
+
+    if (fadePosition <= 0.0)
+        resetFadePosition();
+}
+
+void resetFadePosition()
+{
+    lastFadeUpdateTime = getMillisecondCounter();
+}
+
+int clampFadePositionToBlink()
+{
+    int fp = int (fadePosition * 4.0);
+    if (fp == 0 || fp == 2) return 255;
+
+    return 0;
+}
+
+/* -----------------------------------------------------------------------------
+ * UTILITY
+ * ---------------------------------------------------------------------------*/ 
+int round (float num)
+{
+    int iNum = int (num);
+    float res = num - iNum;
+
+    if (res > 0.5)
+        return iNum + 1;
+
+    return iNum;
+}
+ 
+float ceil (float num)
+{
+    int inum = int (num);
+
+    if (num == float (inum)) 
+        return float (inum);
+
+    return float (inum + 1);
+}
+
+int convertPositionToPixel (float pos) 
+{
+    return int (map (pos, 0.0, 1.9, 0.0, 14.0)); 
+}
+
+/* -----------------------------------------------------------------------------
+ * Clip Info
+ * ---------------------------------------------------------------------------*/
+ 
+int getClipMainARGB (int index)
+{
+    int colourIndex = clipInfo[index] >> 8 & 0xFF;
+    return (colourIndex == 0 ? 0xFF0B0C0D : getVelocityColour (colourIndex));
+}
+
+int getClipAltARGB (int index)
+{
+    return getVelocityColour (clipInfo[index] & 0xFF);
+}
+
+int getClipMode (int index)
+{
+    return clipInfo[index] >> 16 & 0xFF;
+}
+
+void setClipInfo (int index, int clipMode, int colourIndex)
+{   
+    // set mode
+    clipInfo[index] = (clipInfo[index] & 0x0000FFFF) | clipMode << 16;
+    
+    if (clipMode == solidChannel)
+        clipInfo[index] = (clipInfo[index] & 0xFFFF00FF) | colourIndex << 8;
+    else
+        clipInfo[index] = (clipInfo[index] & 0xFFFFFF00) | colourIndex;
+}
+ 
+/* -----------------------------------------------------------------------------
+ * COLOUR TABLE
+ * ---------------------------------------------------------------------------*/ 
+
+int convertRGB565ToRGB888 (int c)
+{
+    int a = 255;
+
+    int r5 = ((c >> 11) & 0x1F);
+    int g6 = ((c >> 5)  & 0x3F);
+    int b5 = ((c)       & 0x1F);
+
+    int r8 = (r5 * 255 + 15) / 31;
+    int g8 = (g6 * 255 + 31) / 63;
+    int b8 = (b5 * 255 + 15) / 31;
+
+    return makeARGB (255, r8, g8, b8);
+}
+
+int getVelocityColour (int velocity)
+{ 
+    float velocityRange = velocity / 2.0;
+    int nearestIndex  = round (velocityRange);
+    int packedColour  = colourTable[nearestIndex];
+    
+    if (nearestIndex == velocityRange)
+        packedColour = packedColour >> 16;
+    
+    return convertRGB565ToRGB888 (packedColour & 0xFFFF);
+}
+
+void initialiseColour (int index, int c0, int c1, int c2, int c3, int c4, int c5, int c6, int c7)
+{
+    colourTable[index + 0] = c0;
+    colourTable[index + 1] = c1;
+    colourTable[index + 2] = c2;
+    colourTable[index + 3] = c3;
+    colourTable[index + 4] = c4;
+    colourTable[index + 5] = c5;
+    colourTable[index + 6] = c6;
+    colourTable[index + 7] = c7;
+}
+
+void initialiseColours()
+{
+    initialiseColour (0,  0xC61818E3, 0x7BEFFFFF, 0xFA69F800, 0x58001800, 
+                          0xFDEDFAA0, 0x58E020C0, 0xFFE9FFE0, 0x5AC018C0);
+
+    initialiseColour (8,  0x8FE957E0, 0x1AC01140, 0x4FE907E0, 0x02C000C0,
+                          0x4FEB07E3, 0x02C100C0, 0x4FF107EA, 0x02C300E2);
+
+    initialiseColour (16, 0x4FF607F3, 0x02C600C2, 0x4E1F055F, 0x020A0083, 
+                          0x4C5F02BF, 0x00EB0043, 0x4A7F001F, 0x000B0003);
+
+    initialiseColour (24, 0x827F501F, 0x180C0806, 0xFA7FF81F, 0x580B1803, 
+                          0xFA70F80A, 0x58032002, 0xF8A099A0, 0x7A804320);
+
+    initialiseColour (32, 0x01C002A6, 0x02AF001F, 0x02292019, 0x7BEF2104, 
+                          0xF800BFE5, 0xAF6067E1, 0x144007F0, 0x055F015F);
+
+    initialiseColour (40, 0x381F781F, 0xB0CF4100, 0xFA408F00, 0x77E207E0,
+                          0x3FE45FEE, 0x3FF95C5F, 0x329883FD, 0xD0FFF80B);
+
+    initialiseColour (48, 0xFBE0BD80, 0x97E082E0, 0x39401262, 0x0A8710A5, 
+                          0x110B69E3, 0xA801DA87, 0xDB43FF04, 0x9F0565A1);
+
+    initialiseColour (56, 0x18E6DFED, 0x87F79CDF, 0x8B3F4208, 0x73AEE7FF, 
+                          0xA0003000, 0x1E800200, 0xBD803980, 0xB2E048A0);
+}
+
+
+/*
+<display backgroundColour="0xFF7C7C7C" textColour ="0xFF000000">
+    <pixels>
+        <pixel index="0" colour="0xFFFFB400" />
+        <pixel index="1" colour="0xFFFFB400" />
+        <pixel index="2" colour="0xFFFFB400" />
+        <pixel index="3" colour="0xFFFFB400" />
+        <pixel index="4" colour="0xFFFFB400" />
+        <pixel index="5" colour="0xFFFFB400" />
+        <pixel index="6" colour="0xFFFFB400" />
+        <pixel index="7" colour="0xFFFFB400" />
+        <pixel index="8" colour="0xFFFFB400" />
+        <pixel index="9" colour="0xFFFFB400" />
+        <pixel index="10" colour="0xFFFFB400" />
+        <pixel index="11" colour="0xFFFFB400" />
+        <pixel index="12" colour="0xFFFFB400" />
+        <pixel index="13" colour="0xFFFFB400" />
+        <pixel index="14" colour="0xFFFFB400" />
+        <pixel index="15" colour="0xFFFEB608" />
+        <pixel index="16" colour="0xFFFEB608" />
+        <pixel index="17" colour="0xFFFEB608" />
+        <pixel index="18" colour="0xFFFEB608" />
+        <pixel index="19" colour="0xFFFEB608" />
+        <pixel index="20" colour="0xFFFEB608" />
+        <pixel index="21" colour="0xFFFEB608" />
+        <pixel index="22" colour="0xFFFEB608" />
+        <pixel index="23" colour="0xFFFEB608" />
+        <pixel index="24" colour="0xFFFEB608" />
+        <pixel index="25" colour="0xFFFEB608" />
+        <pixel index="26" colour="0xFFFEB608" />
+        <pixel index="27" colour="0xFFFEB608" />
+        <pixel index="28" colour="0xFFFEB608" />
+        <pixel index="29" colour="0xFFFEB608" />
+        <pixel index="30" colour="0xFFFEB80F" />
+        <pixel index="31" colour="0xFFFEB80F" />
+        <pixel index="32" colour="0xFFFEB80F" />
+        <pixel index="33" colour="0xFFFEB80F" />
+        <pixel index="34" colour="0xFFFEB80F" />
+        <pixel index="35" colour="0xFFFEB80F" />
+        <pixel index="36" colour="0xFFFEB80F" />
+        <pixel index="37" colour="0xFFFEB80F" />
+        <pixel index="38" colour="0xFFFEB80F" />
+        <pixel index="39" colour="0xFFFEB80F" />
+        <pixel index="40" colour="0xFFFEB80F" />
+        <pixel index="41" colour="0xFFFEB80F" />
+        <pixel index="42" colour="0xFFFEB80F" />
+        <pixel index="43" colour="0xFFFEB80F" />
+        <pixel index="44" colour="0xFFFEB80F" />
+        <pixel index="45" colour="0xFFFDB916" />
+        <pixel index="46" colour="0xFFFDB916" />
+        <pixel index="47" colour="0xFFFDB916" />
+        <pixel index="48" colour="0xFFFDB916" />
+        <pixel index="49" colour="0xFFFDB916" />
+        <pixel index="50" colour="0xFFFDB916" />
+        <pixel index="51" colour="0xFFFDB916" />
+        <pixel index="52" colour="0xFFFDB916" />
+        <pixel index="53" colour="0xFFFDB916" />
+        <pixel index="54" colour="0xFFFDB916" />
+        <pixel index="55" colour="0xFFFDB916" />
+        <pixel index="56" colour="0xFFFDB916" />
+        <pixel index="57" colour="0xFFFDB916" />
+        <pixel index="58" colour="0xFFFDB916" />
+        <pixel index="59" colour="0xFFFDB916" />
+
+        <pixel index="61" colour="0xFFFDBB1D" />
+
+        <pixel index="63" colour="0xFFFDBB1D" />
+
+        <pixel index="65" colour="0xFFFDBB1D" />
+
+        <pixel index="67" colour="0xFFFDBB1D" />
+
+        <pixel index="76" colour="0xFFFEBF27" />
+
+        <pixel index="78" colour="0xFFFEBF27" />
+
+        <pixel index="80" colour="0xFFFEBF27" />
+
+        <pixel index="82" colour="0xFFFEBF27" />
+        <pixel index="83" colour="0xFFFEBF27" />
+        <pixel index="84" colour="0xFFFEBF27" />
+        <pixel index="85" colour="0xFFFEBF27" />
+        <pixel index="86" colour="0xFFFEBF27" />
+        <pixel index="87" colour="0xFFFEBF27" />
+        <pixel index="88" colour="0xFFFEBF27" />
+        <pixel index="89" colour="0xFFFEBF27" />
+
+        <pixel index="91" colour="0xFFFDC130" />
+
+        <pixel index="93" colour="0xFFFDC130" />
+
+        <pixel index="95" colour="0xFFFDC130" />
+
+        <pixel index="97" colour="0xFFFDC130" />
+
+        <pixel index="106" colour="0xFFFBC237" />
+
+        <pixel index="108" colour="0xFFFBC237" />
+
+        <pixel index="110" colour="0xFFFBC237" />
+
+        <pixel index="112" colour="0xFFFBC237" />
+        <pixel index="113" colour="0xFFFBC237" />
+        <pixel index="114" colour="0xFFFBC237" />
+        <pixel index="115" colour="0xFFFBC237" />
+        <pixel index="116" colour="0xFFFBC237" />
+        <pixel index="117" colour="0xFFFBC237" />
+        <pixel index="118" colour="0xFFFBC237" />
+        <pixel index="119" colour="0xFFFBC237" />
+
+        <pixel index="121" colour="0xFFFBC43F" />
+
+        <pixel index="123" colour="0xFFFBC43F" />
+ 
+        <pixel index="125" colour="0xFFFBC43F" />
+
+        <pixel index="127" colour="0xFFFBC43F" />
+
+        <pixel index="136" colour="0xFFFDC745" />
+
+        <pixel index="138" colour="0xFFFDC745" />
+
+        <pixel index="140" colour="0xFFFDC745" />
+
+        <pixel index="142" colour="0xFFFDC745" />
+        <pixel index="143" colour="0xFFFDC745" />
+        <pixel index="144" colour="0xFFFDC745" />
+        <pixel index="145" colour="0xFFFDC745" />
+        <pixel index="146" colour="0xFFFDC745" />
+        <pixel index="147" colour="0xFFFDC745" />
+        <pixel index="148" colour="0xFFFDC745" />
+        <pixel index="149" colour="0xFFFDC745" />
+
+        <pixel index="151" colour="0xFFFDC94C" />
+
+        <pixel index="153" colour="0xFFFDC94C" />
+
+        <pixel index="155" colour="0xFFFDC94C" />
+
+        <pixel index="157" colour="0xFFFDC94C" />
+
+        <pixel index="165" colour="0xFFFDCB53" />
+        <pixel index="166" colour="0xFFFDCB53" />
+        <pixel index="167" colour="0xFFFDCB53" />
+        <pixel index="168" colour="0xFFFDCB53" />
+        <pixel index="169" colour="0xFFFDCB53" />
+        <pixel index="170" colour="0xFFFDCB53" />
+        <pixel index="171" colour="0xFFFDCB53" />
+        <pixel index="172" colour="0xFFFDCB53" />
+        <pixel index="173" colour="0xFFFDCB53" />
+        <pixel index="174" colour="0xFFFDCB53" />
+        <pixel index="175" colour="0xFFFDCB53" />
+        <pixel index="176" colour="0xFFFDCB53" />
+        <pixel index="177" colour="0xFFFDCB53" />
+        <pixel index="178" colour="0xFFFDCB53" />
+        <pixel index="179" colour="0xFFFDCB53" />
+        <pixel index="180" colour="0xFFFBCC5A" />
+        <pixel index="181" colour="0xFFFBCC5A" />
+        <pixel index="182" colour="0xFFFBCC5A" />
+        <pixel index="183" colour="0xFFFBCC5A" />
+        <pixel index="184" colour="0xFFFBCC5A" />
+        <pixel index="185" colour="0xFFFBCC5A" />
+        <pixel index="186" colour="0xFFFBCC5A" />
+        <pixel index="187" colour="0xFFFBCC5A" />
+        <pixel index="188" colour="0xFFFBCC5A" />
+        <pixel index="189" colour="0xFFFBCC5A" />
+        <pixel index="190" colour="0xFFFBCC5A" />
+        <pixel index="191" colour="0xFFFBCC5A" />
+        <pixel index="192" colour="0xFFFBCC5A" />
+        <pixel index="193" colour="0xFFFBCC5A" />
+        <pixel index="194" colour="0xFFFBCC5A" />
+        <pixel index="195" colour="0xFFFBCE61" />
+        <pixel index="196" colour="0xFFFBCE61" />
+        <pixel index="197" colour="0xFFFBCE61" />
+        <pixel index="198" colour="0xFFFBCE61" />
+        <pixel index="199" colour="0xFFFBCE61" />
+        <pixel index="200" colour="0xFFFBCE61" />
+        <pixel index="201" colour="0xFFFBCE61" />
+        <pixel index="202" colour="0xFFFBCE61" />
+        <pixel index="203" colour="0xFFFBCE61" />
+        <pixel index="204" colour="0xFFFBCE61" />
+        <pixel index="205" colour="0xFFFBCE61" />
+        <pixel index="206" colour="0xFFFBCE61" />
+        <pixel index="207" colour="0xFFFBCE61" />
+        <pixel index="208" colour="0xFFFBCE61" />
+        <pixel index="209" colour="0xFFFBCE61" />
+        <pixel index="210" colour="0xFFFDD169" />
+        <pixel index="211" colour="0xFFFDD169" />
+        <pixel index="212" colour="0xFFFDD169" />
+        <pixel index="213" colour="0xFFFDD169" />
+        <pixel index="214" colour="0xFFFDD169" />
+        <pixel index="215" colour="0xFFFDD169" />
+        <pixel index="216" colour="0xFFFDD169" />
+        <pixel index="217" colour="0xFFFDD169" />
+        <pixel index="218" colour="0xFFFDD169" />
+        <pixel index="219" colour="0xFFFDD169" />
+        <pixel index="220" colour="0xFFFDD169" />
+        <pixel index="221" colour="0xFFFDD169" />
+        <pixel index="222" colour="0xFFFDD169" />
+        <pixel index="223" colour="0xFFFDD169" />
+        <pixel index="224" colour="0xFFFDD169" />
+    </pixels>
+</display>
+*/

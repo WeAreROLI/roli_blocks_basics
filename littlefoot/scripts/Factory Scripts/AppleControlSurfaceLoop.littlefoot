@@ -1,0 +1,249 @@
+/*
+<metadata target="Loop" scriptVersion="0">
+</metadata>
+*/
+
+/* -----------------------------------------------------------------------------
+ * BEHAVIOUR MODES
+ * What mode are we in? Internal 'control other blocks / send sysex to DAW' mode
+ * or the midi CC mode?
+ * ---------------------------------------------------------------------------*/
+const int internal = 0x00;
+const int midiCC   = 0x01;
+const int sysex    = 0x02;
+
+
+/* -----------------------------------------------------------------------------
+ * BUTTON MODES
+ * These correspond to the internal firmware modes, and define the button 
+ * behaviour
+ * ---------------------------------------------------------------------------*/
+const int toggle   = 0x00;
+const int pulse    = 0x01;
+const int gate     = 0x02;
+const int trigger  = 0x03;
+const int cycle    = 0x04;
+const int incDec   = 0x05;
+const int triState = 0x06;
+
+/* -----------------------------------------------------------------------------
+ * MIDI VALUES
+ * Some quick and dirty constants to let us specify midi ranges
+ * ---------------------------------------------------------------------------*/
+const int minMidi     = 0x00;
+const int maxChannel  = 0x10;
+const int maxMidi     = 0x7F;
+const int baseCCIndex = 0x66;
+
+/* -----------------------------------------------------------------------------
+ * BUTTON INDEX
+ * ---------------------------------------------------------------------------*/
+ const int Button_mode = 0;
+ const int Button_levels = 1;
+ const int Button_click = 2;
+ const int Button_snap = 3;
+ const int Button_back = 4;
+ const int Button_play = 5;
+ const int Button_record = 6;
+ const int Button_learn = 7;
+ const int Button_minus = 8;
+ const int Button_plus = 9;
+ const int numButtons = 10;
+
+/* -----------------------------------------------------------------------------
+ * COLOURS
+ * ---------------------------------------------------------------------------*/
+const int Colour_offWhite = -7829368;
+const int Colour_green = -16711896;
+const int Colour_red = -62464;
+const int Colour_cyan = -16745729;
+const int Colour_yellow = -13568;
+const int Colour_purple = -12450675;
+
+
+/* -----------------------------------------------------------------------------
+ * CC Parameters
+ * ---------------------------------------------------------------------------*/
+ const int CC_instrumentId = 0;
+ const int CC_cycleMode = 5;
+ const int CC_specialCase = 9;
+ const int CC_instrumentMode = 102;
+ const int CC_mixerMode = 103;
+ const int CC_click = 104;
+ const int CC_loop = 105;
+ const int CC_undoRedoMode = 106;
+ const int CC_playPause = 107;
+ const int CC_record = 108;
+ const int CC_learn = 109;
+ const int CC_minus = 110;
+ const int CC_plus = 111;
+ const int CC_trackLevel = 112;
+ const int CC_undo = 113;
+ const int CC_redo = 114;
+ 
+ 
+//==============================================================================
+const int SpecialCaseCCVal_identityQuery1 = 8;
+const int SpecialCaseCCVal_identityQuery2 = 9;
+
+
+/* -----------------------------------------------------------------------------
+ * VARIABLES
+ * ---------------------------------------------------------------------------*/
+ 
+float level;
+float targetLevel;
+float levelIncrement;
+bool undoModeEnabled;
+int currentMode;
+
+
+void initialise()
+{
+    initControl (Button_mode,    pulse,   midiCC, 0, minMidi, maxMidi, CC_instrumentMode,   Colour_cyan,    Colour_offWhite);
+    initControl (Button_levels,  pulse,   midiCC, 0, minMidi, maxMidi, CC_mixerMode,  Colour_yellow,  Colour_offWhite);
+    initControl (Button_click,   pulse,   midiCC, 0, minMidi, maxMidi, CC_click,  Colour_purple,  Colour_offWhite);
+    initControl (Button_snap,    pulse,   midiCC, 0, minMidi, maxMidi, CC_loop,   Colour_yellow,  Colour_offWhite);
+    initControl (Button_play,    pulse,   midiCC, 0, minMidi, maxMidi, CC_playPause,   Colour_green,   Colour_offWhite);
+    initControl (Button_record,  pulse,   midiCC, 0, minMidi, maxMidi, CC_record, Colour_red,     Colour_offWhite);
+    initControl (Button_learn,   pulse,   midiCC, 0, minMidi, maxMidi, CC_learn,  Colour_yellow,  Colour_offWhite);
+    
+    disableUndoMode();
+}
+
+void enableUndoMode()
+{     
+    initControl (Button_back,   pulse,  midiCC, 127, minMidi, maxMidi,  CC_undoRedoMode, Colour_cyan,  Colour_offWhite);
+    initControl (Button_minus,  gate,   midiCC, 127, minMidi, maxMidi,  CC_undo, Colour_red,  Colour_offWhite);
+    initControl (Button_plus,   gate,   midiCC, 127, minMidi, maxMidi,  CC_redo, Colour_yellow,  Colour_offWhite);
+    
+    undoModeEnabled = true;
+}
+
+void disableUndoMode()
+{
+    initControl (Button_back,   pulse,   midiCC, 0, minMidi, maxMidi,  CC_undoRedoMode, Colour_cyan,  Colour_offWhite);
+    initControl (Button_minus,  gate,    midiCC, 0, minMidi, maxMidi,  CC_minus, Colour_red,  Colour_offWhite);
+    initControl (Button_plus,   gate,    midiCC, 0, minMidi, maxMidi,  CC_plus, Colour_yellow,  Colour_offWhite);
+    
+    undoModeEnabled = false;
+}
+
+void handleButtonDown (int index)
+{
+    if (undoModeEnabled && (index != Button_minus && index != Button_plus))
+    {
+        disableUndoMode();
+    }
+    
+    else if (index == Button_back)
+    {
+       enableUndoMode();
+    }
+    
+    else if (index == currentMode)
+    {
+        for (int i = 0; i < getNumBlocksInTopology(); ++i)
+            sendMessageToBlock (getBlockIDForIndex (i), 0xB0, CC_cycleMode, 127);            
+    }
+    
+    else
+    {
+        onControlPress (index);
+    }
+}
+
+void handleButtonUp (int index)
+{
+}
+
+int getHexAlpha (float val)
+{
+    return int (val * float (0xFF)) << 24;
+}
+
+void drawLedLevel()
+{
+    fillRect (0x000000, 0, 0, 15, 1);
+        
+    if ((levelIncrement < 0 && level <= targetLevel) || (levelIncrement > 0 && level >= targetLevel))
+        level = targetLevel;
+    else
+        level += levelIncrement;
+    
+    if (level > 0)
+    {
+        int alpha = getHexAlpha (level / 127.0);
+        int green = (Colour_green & 0xFFFFFF) | alpha;
+        int red = (Colour_red & 0xFFFFFF) | alpha;
+        
+        blendRect (green, 0, 0, 15, 1);
+        blendGradientRect (red, green, green, red, 0, 0, 5, 1);
+        blendGradientRect (green, red, red, green, 10, 0, 5, 1);
+        
+        float levelScaled = (level / 127.0) * 7.0;
+        int whole = int (levelScaled);
+        int remainderAlpha = getHexAlpha (1.0 - (levelScaled - float (whole)));
+    
+        fillRect (0x000000, 8 + whole, 0, 8, 1);
+        blendRect (remainderAlpha, 7 + whole, 0, 1, 1);
+    
+        fillRect (0x000000, 0, 0, 7 - whole, 1);
+        blendRect (remainderAlpha, 7 - whole, 0, 1, 1); 
+    }
+}
+
+void repaint()
+{
+    clearDisplay();
+    repaintControl();
+    
+    if (undoModeEnabled)
+    {
+        blendRect (0xF0000000, 0, 1, 4, 1);
+        blendRect (0xF0000000, 5, 1, 3, 1);
+    }
+    
+    drawLedLevel();
+}
+
+
+void handleMIDI (int byte0, int byte1, int byte2)
+{
+    if (byte0 != 0xB0)
+        return;
+    
+    if (byte1 == CC_trackLevel)
+    {
+        targetLevel = float (byte2);
+        levelIncrement = (targetLevel - level) / 10;
+    }
+    else if (byte1 == CC_specialCase)
+    {
+        // Message sent are a uniquly identify for this script.
+        // First number is a unique for this script / response
+        // Second number is used on all apple control surface scripts
+        // 3rd number is reserved for version
+        
+        if (byte2 == SpecialCaseCCVal_identityQuery1)
+            sendMessageToHost (0x3a97585, 0x6f5b047, 0x0);
+            
+        else if (byte2 == SpecialCaseCCVal_identityQuery2)
+            sendMessageToHost (0x7ad6e78, 0x6f5b047, 0x0);
+    }
+    else if (byte2 == 127)
+    {
+        
+        if (byte1 == CC_instrumentMode)
+            currentMode = Button_mode;
+            
+        else if (byte1 == CC_mixerMode)
+            currentMode = Button_levels;
+    }
+}
+
+void handleMessage (int param1, int param2, int param3)
+{
+    // handle message like a midi message so API host can also get the id
+    handleMIDI (param1, param2, param3);
+}

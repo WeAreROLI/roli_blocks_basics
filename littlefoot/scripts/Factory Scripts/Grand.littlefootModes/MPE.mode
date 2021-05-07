@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mode name="MPE">
+  <variable name="UseMPE" value="true"/>
+  <variable name="MIDIStartChannel" value="2"/>
+  <variable name="MIDIEndChannel" value="16"/>
+  <variable name="GlideTrackingMode" value="Last Played"/>
+  <variable name="PressureTrackingMode" value="Last Played"/>
+  <variable name="Octave" value="0"/>
+  <variable name="Transpose" value="0"/>
+  <variable name="PitchBendRange" value="48"/>
+  <variable name="GlideSensitivity" value="115"/>
+  <variable name="PedalInputCC1" value=" 60 LSB for Control 28"/>
+  <variable name="PedalSwitch1" value="Switch (auto-detect)"/>
+  <variable name="PedalInputCC2" value=" 67 Soft Pedal"/>
+  <variable name="PedalSwitch2" value="Switch (auto-detect)"/>
+  <variable name="PedalInputCC3" value=" 66 Sostenuto Pedal"/>
+  <variable name="PedalSwitch3" value="Switch (auto-detect)"/>
+</mode>

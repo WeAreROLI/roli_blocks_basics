@@ -1,0 +1,112 @@
+/*
+<metadata description="Control tracks and automatically configure the Lightpad for the selected instrument in Logic." 
+    details="Integrate your Lightpad with Logic to automatically switch between melodic or drum grids, configure MIDI settings and access Smart Control faders with the mode button. When you connect your Lightpad to a Loop Block with Logic Control loaded, you can access the Lightpad mixer view with Volume, Pan, Solo and Mute. For best performance connect over USB."
+    target="Lightpad" tags="MPE;MIDI;Melodic;Drum">
+</metadata>
+
+<display backgroundColour="0xFF3568A0" textColour ="0xFFFFFFFF">
+    <pixels>
+        <pixel index="1" colour="0xFFD9DCE5" />
+        <pixel index="2" colour="0xFFD9DCE5" />
+        <pixel index="3" colour="0xFFD9DCE5" />
+        <pixel index="4" colour="0xFFD9DCE5" />
+        <pixel index="5" colour="0xFFD9DCE5" />
+        <pixel index="6" colour="0xFFD9DCE5" />
+        <pixel index="7" colour="0xFFD9DCE5" />
+        <pixel index="8" colour="0xFFD9DCE5" />
+        <pixel index="9" colour="0xFFD9DCE5" />
+        <pixel index="10" colour="0xFFD9DCE5" />
+        <pixel index="11" colour="0xFFD9DCE5" />
+        <pixel index="12" colour="0xFFD9DCE5" />
+        <pixel index="13" colour="0xFFD9DCE5" />
+        <pixel index="16" colour="0xFFBDBDC0" />
+        <pixel index="28" colour="0xFFBDBDC0" />
+        <pixel index="31" colour="0xFFD9DCE5" />
+        <pixel index="35" colour="0xFFD9DCE5" />
+        <pixel index="36" colour="0xFFD9DCE5" />
+        <pixel index="37" colour="0xFFD9DCE5" />
+        <pixel index="38" colour="0xFFD9DCE5" />
+        <pixel index="39" colour="0xFFD9DCE5" />
+        <pixel index="43" colour="0xFFD9DCE5" />
+        <pixel index="46" colour="0xFFD9DCE5" />
+        <pixel index="50" colour="0xFFD9DCE5" />
+        <pixel index="51" colour="0xFFD9DCE5" />
+        <pixel index="52" colour="0xFFD9DCE5" />
+        <pixel index="53" colour="0xFFD9DCE5" />
+        <pixel index="54" colour="0xFFD9DCE5" />
+        <pixel index="58" colour="0xFFD9DCE5" />
+        <pixel index="61" colour="0xFFD9DCE5" />
+        <pixel index="73" colour="0xFFD9DCE5" />
+        <pixel index="76" colour="0xFFD9DCE5" />
+        <pixel index="88" colour="0xFFD9DCE5" />
+        <pixel index="91" colour="0xFFD9DCE5" />
+        <pixel index="96" colour="0xFFBDBDC0" />
+        <pixel index="97" colour="0xFFBDBDC0" />
+        <pixel index="98" colour="0xFFBDBDC0" />
+        <pixel index="103" colour="0xFFD9DCE5" />
+        <pixel index="106" colour="0xFFD9DCE5" />
+        <pixel index="110" colour="0xFFBDBDC0" />
+        <pixel index="111" colour="0xFFBDBDC0" />
+        <pixel index="112" colour="0xFFD9DCE5" />
+        <pixel index="113" colour="0xFFBDBDC0" />
+        <pixel index="114" colour="0xFFBDBDC0" />
+        <pixel index="118" colour="0xFFD9DCE5" />
+        <pixel index="121" colour="0xFFD9DCE5" />
+        <pixel index="124" colour="0xFFBDBDC0" />
+        <pixel index="125" colour="0xFFBDBDC0" />
+        <pixel index="126" colour="0xFFD9DCE5" />
+        <pixel index="127" colour="0xFFD9DCE5" />
+        <pixel index="128" colour="0xFFD9DCE5" />
+        <pixel index="129" colour="0xFFBDBDC0" />
+        <pixel index="130" colour="0xFFBDBDC0" />
+        <pixel index="133" colour="0xFFD9DCE5" />
+        <pixel index="136" colour="0xFFD9DCE5" />
+        <pixel index="139" colour="0xFFBDBDC0" />
+        <pixel index="140" colour="0xFFD9DCE5" />
+        <pixel index="141" colour="0xFFD9DCE5" />
+        <pixel index="142" colour="0xFFD9DCE5" />
+        <pixel index="143" colour="0xFFD9DCE5" />
+        <pixel index="144" colour="0xFFD9DCE5" />
+        <pixel index="145" colour="0xFFBDBDC0" />
+        <pixel index="148" colour="0xFFD9DCE5" />
+        <pixel index="151" colour="0xFFD9DCE5" />
+        <pixel index="154" colour="0xFFBDBDC0" />
+        <pixel index="155" colour="0xFFBDBDC0" />
+        <pixel index="156" colour="0xFFD9DCE5" />
+        <pixel index="157" colour="0xFFD9DCE5" />
+        <pixel index="158" colour="0xFFD9DCE5" />
+        <pixel index="159" colour="0xFFBDBDC0" />
+        <pixel index="160" colour="0xFFBDBDC0" />
+        <pixel index="163" colour="0xFFD9DCE5" />
+        <pixel index="166" colour="0xFFD9DCE5" />
+        <pixel index="170" colour="0xFFBDBDC0" />
+        <pixel index="171" colour="0xFFBDBDC0" />
+        <pixel index="172" colour="0xFFD9DCE5" />
+        <pixel index="173" colour="0xFFBDBDC0" />
+        <pixel index="174" colour="0xFFBDBDC0" />
+        <pixel index="178" colour="0xFFD9DCE5" />
+        <pixel index="181" colour="0xFFD9DCE5" />
+        <pixel index="186" colour="0xFFBDBDC0" />
+        <pixel index="187" colour="0xFFBDBDC0" />
+        <pixel index="188" colour="0xFFBDBDC0" />
+        <pixel index="193" colour="0xFFD9DCE5" />
+        <pixel index="196" colour="0xFFD9DCE5" />
+        <pixel index="208" colour="0xFFD9DCE5" />
+        <pixel index="211" colour="0xFFD9DCE5" />
+        <pixel index="212" colour="0xFFD9DCE5" />
+        <pixel index="213" colour="0xFFD9DCE5" />
+        <pixel index="214" colour="0xFFD9DCE5" />
+        <pixel index="215" colour="0xFFD9DCE5" />
+        <pixel index="216" colour="0xFFD9DCE5" />
+        <pixel index="217" colour="0xFFD9DCE5" />
+        <pixel index="218" colour="0xFFD9DCE5" />
+        <pixel index="219" colour="0xFFD9DCE5" />
+        <pixel index="220" colour="0xFFD9DCE5" />
+        <pixel index="221" colour="0xFFD9DCE5" />
+        <pixel index="222" colour="0xFFD9DCE5" />
+        <pixel index="223" colour="0xFFD9DCE5" />
+    </pixels>
+</display>
+*/
+
+#include "../LittleFootLibrary/AppleControlSurface.littlefoot"

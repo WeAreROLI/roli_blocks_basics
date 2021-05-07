@@ -1,0 +1,714 @@
+//==============================================================================
+//
+// Note Grid Base
+//
+// A generic implementation to draw a note grid with minimal setup.
+//
+// Pads are indexed from top left incrementing horizontally and wrapping 
+// vertically.
+//
+// Warnings:
+// - When including this file, set your heap size correctly (check the heap layout below)
+// - Many programs including NoteGrid are close to 100% capacity. Be carful not
+//   to increase the size when editing this script.
+// - If heap size changes, all programs including this file must be updated
+//
+//==============================================================================
+
+
+//==============================================================================
+//
+// Example (uncomment to run)
+//
+//==============================================================================
+//
+// #heapsize: 121
+//
+// void initialise()
+// {
+//     int gridSize = 5;
+//     int scaleIndex = 0; // major
+//     int transpose = 0; // C
+//     int octave = 0;
+//     bool hideMode = false;
+//     int padOffset = gridSize * (getClusterXpos() + getClusterYpos() * gridSize);
+//     int rowWrapDelta = gridSize;
+//     int colour1 = 0x7199ff;
+//     int colour2 = 0x6fe6ff;
+//
+//     NoteGridBase_initialise();
+//     NoteGridBase_initialisePads (gridSize, scaleIndex, transpose, octave, 
+//                              hideMode, padOffset, rowWrapDelta, colour1, colour2);
+// }
+//
+// void repaint()
+// {
+//     NoteGridBase_repaint();
+// }
+//
+// void touchStart (int index, float x, float y, float z, float vz)
+// {
+//     NoteGridBase_touchStart (index, x, y, z, vz);
+// }
+//
+// void touchMove (int index, float x, float y, float z, float vz)
+// {
+//     NoteGridBase_touchMove (index, x, y, z, vz);
+// }
+//
+// void touchEnd (int index, float x, float y, float z, float vz)
+// {
+//     NoteGridBase_touchEnd (index, x, y, z, vz);
+// }
+//
+//==============================================================================
+
+
+//==============================================================================
+#include "Scale.littlefoot"
+#include "ConfigIds.littlefoot"
+
+const int NoteGridBase_maxNumTouches = 16;
+const int NoteGridBase_maxNumMidiChannels = 16;
+const int NoteGridBase_maxNumPads = 25;
+
+//==============================================================================
+bool NoteGridBase_pressureMapEnabled;  // default = true
+bool NoteGridBase_isEnabled; // default = true
+
+//==== Heap Layout =============================================================
+const int NoteGridBase_Heap_Pad_note          = 0;     // 1 byte x 25 - note numbers
+const int NoteGridBase_Heap_Touch_padIndex    = 25;    // 1 byte x 16 - corresponding pad index (0xff if none)
+const int NoteGridBase_Heap_Touch_midiChannel = 41;    // 1 byte x 16 - MIDI channel assigned
+const int NoteGridBase_Heap_Touch_note        = 57;    // 1 byte x 16 - Touch note number
+const int NoteGridBase_Heap_Touch_velocity    = 73;    // 1 byte x 16 - Touch velocity
+const int NoteGridBase_Heap_Touch_activeOrder = 89;    // 1 byte x 16 - list of active touch indicies in order of first played to last played
+const int NoteGridBase_Heap_Channel_touch     = 105;   // 1 byte x 16 - touch to track for this channel (depends on tracking mode)
+
+// Total = 121 bytes
+
+//==============================================================================
+int NoteGridBase_activePads;
+int NoteGridBase_padColour[NoteGridBase_maxNumPads];
+float NoteGridBase_touchInitialX[NoteGridBase_maxNumTouches];
+float NoteGridBase_touchInitialY[NoteGridBase_maxNumTouches];
+
+int NoteGridBase_size;
+int NoteGridBase_padWidth;
+int NoteGridBase_padSpacing;
+int NoteGridBase_octave;
+int NoteGridBase_scaleBitmask;
+int NoteGridBase_scaleRoot;
+bool NoteGridBase_hideMode;
+
+int NoteGridBase_padOffset;
+int NoteGridBase_rowWrapDelta;
+
+bool  NoteGridBase_glideLockActive;
+float NoteGridBase_glideLockTarget;
+int   NoteGridBase_glideLockInitialNote;
+int   NoteGridBase_glideLockChannel;
+
+//==============================================================================
+void  NoteGridBase_Pad_setNote (int padIndex, int note)                  { setHeapByte (padIndex + NoteGridBase_Heap_Pad_note, note); }
+int   NoteGridBase_Pad_getNote (int padIndex)                            { return getHeapByte (padIndex + NoteGridBase_Heap_Pad_note); }
+
+void  NoteGridBase_Touch_setPad (int touchIndex, int padIndex)           { setHeapByte (touchIndex + NoteGridBase_Heap_Touch_padIndex, padIndex); }
+int   NoteGridBase_Touch_getPad (int touchIndex)                         { return getHeapByte (touchIndex + NoteGridBase_Heap_Touch_padIndex); }
+
+void  NoteGridBase_Touch_setChannel (int touchIndex, int channel)        { setHeapByte (touchIndex + NoteGridBase_Heap_Touch_midiChannel, channel); }
+int   NoteGridBase_Touch_getChannel (int touchIndex)                     { return getHeapByte (touchIndex + NoteGridBase_Heap_Touch_midiChannel); }
+
+void  NoteGridBase_Touch_setNote (int touchIndex, int noteNumber)        { setHeapByte (touchIndex + NoteGridBase_Heap_Touch_note, noteNumber); }
+int   NoteGridBase_Touch_getNote (int touchIndex)                        { return getHeapByte (touchIndex + NoteGridBase_Heap_Touch_note); }
+
+void  NoteGridBase_Touch_setVelocity (int touchIndex, int velocity)      { setHeapByte (touchIndex + NoteGridBase_Heap_Touch_velocity, velocity); }
+int   NoteGridBase_Touch_getVelocity (int touchIndex)                    { return getHeapByte (touchIndex + NoteGridBase_Heap_Touch_velocity); }
+
+void  NoteGridBase_Touch_setTouchByHistory (int touchIndex, int order)   { setHeapByte (order + NoteGridBase_Heap_Touch_activeOrder, touchIndex); }
+int   NoteGridBase_Touch_getTouchByHistory (int order)                   { return getHeapByte (order + NoteGridBase_Heap_Touch_activeOrder); }
+
+void  NoteGridBase_Channel_setTrackedTouch (int channel, int touchIndex) { setHeapByte (channel + NoteGridBase_Heap_Channel_touch, touchIndex); }
+int   NoteGridBase_Channel_getTrackedTouch (int channel)                 { return getHeapByte (channel + NoteGridBase_Heap_Channel_touch); }
+
+void  NoteGridBase_Pad_setActive (int padIndex, bool setActive)          { NoteGridBase_activePads = setActive ? (NoteGridBase_activePads | (1 << padIndex)) : (NoteGridBase_activePads & ~(1 << padIndex)); }
+bool  NoteGridBase_Pad_isActive  (int padIndex)                          { return NoteGridBase_activePads & (1 << padIndex); }
+
+bool  NoteGridBase_isAnyPadActive()                                      { return NoteGridBase_activePads; }
+
+//==============================================================================
+void NoteGridBase_initialise()
+{
+    NoteGridBase_size = 1; // must have initial value to avoid divide by 0
+    NoteGridBase_pressureMapEnabled = true;
+    NoteGridBase_isEnabled = true;
+
+    // initialiseTouches
+    for (int touchIndex = 0; touchIndex < NoteGridBase_maxNumTouches; ++touchIndex)
+    {
+        NoteGridBase_Touch_setPad (touchIndex, 0xff);
+        NoteGridBase_Touch_setChannel (touchIndex, 0xff);
+        NoteGridBase_Touch_setTouchByHistory (0xff, touchIndex);
+    }
+
+    // initialiseChannels
+    for (int channel = 0; channel < NoteGridBase_maxNumMidiChannels; ++channel)
+        NoteGridBase_Channel_setTrackedTouch (channel, 0xff);
+}
+
+void NoteGridBase_initialisePads (int gridSize, int scaleIndex, int scaleRoot, int octave, bool hideMode,
+                              int gridOffset, int rowOffset, int colour0, int colour1)
+{
+    NoteGridBase_size = gridSize;
+    NoteGridBase_octave = octave;
+    NoteGridBase_scaleBitmask = Scale_getScaleBitMask (scaleIndex);
+    NoteGridBase_scaleRoot = scaleRoot;
+    NoteGridBase_hideMode = hideMode;
+
+    NoteGridBase_padWidth = 15 / NoteGridBase_size;
+    NoteGridBase_padSpacing = NoteGridBase_size > 1 ? (15 - NoteGridBase_size * NoteGridBase_padWidth) / (NoteGridBase_size - 1) : 0;
+    NoteGridBase_padWidth += NoteGridBase_padSpacing;
+
+    NoteGridBase_padOffset = gridOffset;
+    NoteGridBase_rowWrapDelta = rowOffset;
+
+    // Set dim limit dependendant if gammaCorrection has been set
+    NoteGridBase_dimLim = getLocalConfig (ConfigId_gammaCorrection) > 0 ? 100 : 180;
+
+    NoteGridBase_dimFactor = 0;
+    NoteGridBase_activePads = 0;
+    
+    // Initialise Pad Notes
+    for (int padIndex = 0; padIndex < NoteGridBase_maxNumPads; ++padIndex)
+    {
+        // note numbers:
+        int note = NoteGridBase_getNoteForPad (padIndex);
+
+        if (note < 0)
+            note = 0;
+
+        NoteGridBase_Pad_setNote (padIndex, note);
+        
+        float padSize = (2.0 / float (gridSize));
+        float xStart = padSize * (padIndex % gridSize);
+        float yStart = padSize * (padIndex / gridSize);
+
+        addPitchCorrectionPad (padIndex, note, xStart, yStart, padSize, padSize);
+    }
+
+    // Initialise Pad Colours
+    for (int padIndex = 0; padIndex < NoteGridBase_maxNumPads; ++padIndex)
+    {
+        int note = NoteGridBase_Pad_getNote (padIndex);
+
+        // pad colours:
+        int padColour = 0xffffffff;   // tonic = white
+
+        int noteInScale = mod (note - scaleRoot, 12);
+
+        if (noteInScale != 0)
+        {
+            // not the tonic!
+            if (! Scale_isPartOfScale (noteInScale, NoteGridBase_scaleBitmask))
+            {
+                padColour = 0xff000000;
+            }
+            else
+            {
+                int blend = 0xff * (noteInScale - 1) / 10;
+
+                padColour = blendARGB (colour0 | 0xff000000,
+                                      (colour1 & 0x00ffffff) | (blend << 24));
+            }
+        }
+
+        NoteGridBase_padColour[padIndex] = padColour;
+    }
+}
+
+void NoteGridBase_repaint()
+{
+    NoteGridBase_updateDimFactor();
+
+    if (NoteGridBase_isEnabled)
+    {
+        NoteGridBase_drawPads();
+
+        if (NoteGridBase_pressureMapEnabled)
+            drawPressureMap();
+    }
+
+    fadePressureMap();
+}
+
+//==== Touch ===================================================================
+void NoteGridBase_touchStart (int touchIndex, float x, float y, float z, float vz)
+{
+    if (NoteGridBase_Touch_getPad (touchIndex) != 0xff || ! NoteGridBase_isEnabled)
+        return;
+
+    int padIndex = NoteGridBase_getTouchedPad (x, y);
+    int note = clamp (0, 127, NoteGridBase_Pad_getNote (padIndex));
+    int velocity = clamp (1, 127, int (vz * 127.0));
+    int pressure = clamp (0, 127, int (z * 127.0));
+    bool enableMidiNoteOn = true;
+
+    int channel;
+
+    if (NoteGridBase_glideLockActive)
+    {
+        channel = NoteGridBase_glideLockChannel;
+        NoteGridBase_setGlideLockTarget (note);
+        enableMidiNoteOn = false;
+    }
+    else
+    {
+        channel = assignChannel (note);
+
+        if (getLocalConfig (ConfigId_glideLockEnable) && NoteGridBase_size > 1)
+        {
+            NoteGridBase_glideLockActive = true;
+            NoteGridBase_resetGlideLockToNote (note, channel);
+        }
+    }
+    
+    NoteGridBase_addTouchToList (touchIndex);
+    NoteGridBase_Pad_setActive (padIndex, true);
+    NoteGridBase_Channel_setTrackedTouch (channel, touchIndex);
+    NoteGridBase_Touch_setPad (touchIndex, padIndex);
+    NoteGridBase_Touch_setNote (touchIndex, note);
+    NoteGridBase_touchInitialX[touchIndex] = x;
+    NoteGridBase_touchInitialY[touchIndex] = y;
+    NoteGridBase_Touch_setChannel (touchIndex, channel);
+    NoteGridBase_Touch_setVelocity (touchIndex, velocity);
+
+    if (enableMidiNoteOn)
+    {
+        if (getLocalConfig (ConfigId_pitchBendRange) > 0)
+        {
+            if (NoteGridBase_size == 1)
+                sendPitchBend (channel, NoteGridBase_getAbsPitch (touchIndex, x));
+            else
+                sendPitchBend (channel, 8192);
+        }
+
+        if (getLocalConfig (ConfigId_slideSensitivity))
+            sendCC (channel, getLocalConfig (ConfigId_slideCC), NoteGridBase_getYAxisValue (touchIndex, y));
+
+        sendChannelPressure (channel, pressure);
+        sendNoteOn (channel, note, velocity);
+    }
+
+    if (NoteGridBase_pressureMapEnabled)
+        addPressurePoint (NoteGridBase_getTrailColour (NoteGridBase_padColour[padIndex]), x, y, z * 32.0);
+}
+
+void NoteGridBase_touchMove (int touchIndex, float x, float y, float z, float vz)
+{
+    int padIndex = NoteGridBase_Touch_getPad (touchIndex);
+
+    if (padIndex == 0xff)
+        return;  // touch was not started.
+
+    int channel = NoteGridBase_Touch_getChannel (touchIndex);
+
+    if (NoteGridBase_Channel_getTrackedTouch (channel) != touchIndex)
+        return;  // these are not the touch messages you're looking for...
+
+    int note = NoteGridBase_Touch_getNote (touchIndex);
+    int pressure = clamp (0, 127, int (z * 127.0));
+
+    sendMIDI (0xd0 | channel, pressure);
+
+    // Piano Mode acts as a fret
+    if (getLocalConfig (ConfigId_pianoMode))
+    {
+        int newPadIndex = NoteGridBase_getTouchedPad (x, y);
+        int newNote = clamp (0, 127, NoteGridBase_Pad_getNote (newPadIndex));
+
+        if (note != newNote)
+        {
+            if (! NoteGridBase_glideLockActive)
+            {
+                sendNoteOff (channel, note, 0);
+                sendNoteOn (channel, newNote, NoteGridBase_Touch_getVelocity (touchIndex));
+            }
+            else
+            {
+                NoteGridBase_setGlideLockTarget (newNote);
+            }
+            
+            NoteGridBase_Touch_setNote (touchIndex, newNote);
+            NoteGridBase_Touch_setPad (touchIndex, newPadIndex);
+            NoteGridBase_Pad_setActive (padIndex, false);
+            NoteGridBase_Pad_setActive (newPadIndex, true);
+        }
+    }
+    else
+    {
+        if (getLocalConfig (ConfigId_slideSensitivity))
+            sendCC (channel, getLocalConfig (ConfigId_slideCC), NoteGridBase_getYAxisValue (touchIndex, y));
+
+        if (getLocalConfig (ConfigId_pitchBendRange) > 0)
+        {
+            int pitchwheelValue = 0;
+
+            if (NoteGridBase_size == 1)
+            {
+                pitchwheelValue = NoteGridBase_getAbsPitch (touchIndex, x);
+            }
+            else if (NoteGridBase_glideLockActive)
+            {
+                int glideLockDelta = int (map (NoteGridBase_glideLockTarget, 0.0, 16383.0, -8191.0, 8192.0));
+                pitchwheelValue = NoteGridBase_getPitchwheelValue (touchIndex, x) + glideLockDelta;
+            }
+            else
+            {
+                pitchwheelValue = NoteGridBase_getPitchwheelValue (touchIndex, x);
+            }
+            
+            sendPitchBend (channel, pitchwheelValue);
+        }
+    }
+
+    if (NoteGridBase_pressureMapEnabled)
+        addPressurePoint (NoteGridBase_getTrailColour (NoteGridBase_padColour[padIndex]), x, y, z * 32.0);
+}
+
+void NoteGridBase_touchEnd (int touchIndex, float x, float y, float z, float vz)
+{
+    int padIndex = NoteGridBase_Touch_getPad (touchIndex);
+
+    if (padIndex == 0xff)
+        return;  // touch was not started.
+
+    int channel = NoteGridBase_Touch_getChannel (touchIndex);
+    int note = NoteGridBase_Touch_getNote (touchIndex);
+    int velocity = clamp (0, 127, int (vz * 127.0));
+
+    if (NoteGridBase_glideLockActive)
+    {
+        int numEvents = NoteGridBase_getNumTouchesInList();
+
+        if (numEvents == 1)
+        {
+            NoteGridBase_glideLockActive = false;
+            sendPitchBend (NoteGridBase_glideLockChannel, 8192, 0);
+            sendNoteOff (NoteGridBase_glideLockChannel, NoteGridBase_glideLockInitialNote, velocity);
+            NoteGridBase_Channel_setTrackedTouch (NoteGridBase_glideLockChannel, 0xff);
+            deassignChannel (NoteGridBase_glideLockInitialNote, NoteGridBase_glideLockChannel);
+        }
+        else if (NoteGridBase_Touch_getTouchByHistory (numEvents - 1) == touchIndex)
+        {
+            int previousTouchIndex = NoteGridBase_Touch_getTouchByHistory (numEvents - 2);
+            int previousNote  = NoteGridBase_Touch_getNote (previousTouchIndex);
+
+            NoteGridBase_setGlideLockTarget (previousNote);
+            NoteGridBase_Channel_setTrackedTouch (NoteGridBase_glideLockChannel, previousTouchIndex);
+            NoteGridBase_Pad_setActive (NoteGridBase_Touch_getPad (previousTouchIndex), true);
+        }
+    }
+    else
+    {
+        sendNoteOff (channel, note, velocity);
+        NoteGridBase_Channel_setTrackedTouch (channel, 0xff);
+        deassignChannel (note, channel);
+    }
+
+    NoteGridBase_Pad_setActive (padIndex, false);
+    NoteGridBase_Touch_setPad (touchIndex, 0xff);
+    NoteGridBase_Touch_setChannel (touchIndex, 0xff);
+
+    NoteGridBase_removeTouchFromList (touchIndex);
+}
+
+//==============================================================================
+int NoteGridBase_getNoteForPad (int padIndex)
+{
+    int padRow = NoteGridBase_size - 1 - (padIndex / NoteGridBase_size);
+    int padCol = padIndex % NoteGridBase_size;
+
+    int lowestNoteIndex = (NoteGridBase_octave * 12) + 48 + NoteGridBase_scaleRoot;
+    int padOffset = NoteGridBase_padOffset + padCol + (padRow * NoteGridBase_rowWrapDelta);
+
+    if (NoteGridBase_hideMode)
+    {
+        int numNotesInScale = Scale_getNumNotesInScale (NoteGridBase_scaleBitmask);
+        int scaleDegree = padOffset % numNotesInScale;
+
+        while (scaleDegree < 0)
+            scaleDegree += numNotesInScale;
+
+        padOffset = (NoteGridBase_roundDownDivide (padOffset, numNotesInScale) * 12)
+                  + Scale_findNthNoteInScale (scaleDegree, NoteGridBase_scaleBitmask);
+    }
+
+    return lowestNoteIndex + padOffset;
+}
+
+
+int NoteGridBase_getTouchedPad (float x, float y)
+{
+    int col = int (x * 0.5 * float (NoteGridBase_size));
+    int row = int (y * 0.5 * float (NoteGridBase_size));
+
+    return (NoteGridBase_size * row) + col;
+}
+
+int NoteGridBase_getTrailColour (int padColour)
+{
+    if (padColour == 0xff000000)
+        return 0xffaaaaaa;
+
+    return blendARGB (0xFFFFFFFF, padColour);
+}
+
+//==============================================================================
+int NoteGridBase_dimFactor;
+int NoteGridBase_dimDelay;
+int NoteGridBase_dimDelta;
+int NoteGridBase_dimLim;
+
+void NoteGridBase_updateDimFactor()
+{
+    if (NoteGridBase_isAnyPadActive() || NoteGridBase_dimDelta)
+    {
+        if (NoteGridBase_dimFactor < NoteGridBase_dimLim)
+            NoteGridBase_dimDelta = 60;
+        else
+            NoteGridBase_dimDelta = 0;
+
+        NoteGridBase_dimFactor += NoteGridBase_dimDelta;
+        NoteGridBase_dimDelay = 3;
+    }
+    else
+    {
+        if (--NoteGridBase_dimDelay <= 0)
+        {
+            NoteGridBase_dimFactor -= 24;
+
+            if (NoteGridBase_dimFactor < 0)
+                NoteGridBase_dimFactor = 0;
+        }
+    }
+}
+
+//==============================================================================
+void NoteGridBase_drawPads()
+{
+    int dimColour = NoteGridBase_dimFactor << 24;
+
+    if (NoteGridBase_size == 1)
+    {
+        int high = 0xff366CC5;
+        int low = 0xffAA429A;
+        int mid = blendARGB (high, low);
+
+        high = blendARGB (high, dimColour);
+        mid = blendARGB (mid, dimColour);
+        low = blendARGB (low, dimColour);
+
+        blendGradientRect (high, mid, low, mid, 0, 0, 15, 15);
+        return;
+    }
+
+    int padIndex = 0;
+
+    for (int padY = 0; padY < NoteGridBase_size; ++padY)
+    {
+        for (int padX = 0; padX < NoteGridBase_size; ++padX)
+        {
+            int overlayColour;
+
+            if (NoteGridBase_pressureMapEnabled)
+                overlayColour = NoteGridBase_Pad_isActive (padIndex) ? 0x66ffffff : dimColour;
+
+            int colour = blendARGB (NoteGridBase_padColour[padIndex], overlayColour);
+
+            int dark = blendARGB (colour, 0xB8000000);
+            int mid  = blendARGB (colour, 0x5C000000);
+
+            int w = NoteGridBase_padWidth - NoteGridBase_padSpacing;
+            blendGradientRect (colour, mid, dark, mid, padX * NoteGridBase_padWidth, padY * NoteGridBase_padWidth, w, w);
+        
+            ++padIndex;
+        }
+    }
+}
+
+//==== Pitch ===================================================================
+
+int NoteGridBase_getAbsPitch (int touchIndex, float x)
+{
+    float deltaX = (x - 1.0) * 12.0;
+    return NoteGridBase_getPitchWheelFromDeltaX (deltaX);
+}
+
+int NoteGridBase_getPitchwheelValue (int touchIndex, float x)
+{
+    float initialX = NoteGridBase_touchInitialX[touchIndex];
+    float scaler = (1.0 / (2.1 / float (NoteGridBase_size)));
+    float deltaX = NoteGridBase_transformPitchForHideMode (touchIndex, scaler * (x - initialX));
+    int pitchWheelFromDelta = NoteGridBase_getPitchWheelFromDeltaX (deltaX);
+
+    if (NoteGridBase_size == 5)
+       pitchWheelFromDelta += getPitchCorrectionPitchBend (touchIndex, pitchWheelFromDelta - 8192);
+
+    return clamp (0, 16383, pitchWheelFromDelta);
+}
+
+int NoteGridBase_getPitchWheelFromDeltaX (float deltaX)
+{
+    float pitchBendRange = float (getLocalConfig (ConfigId_pitchBendRange));
+    deltaX = clamp (-pitchBendRange, pitchBendRange, deltaX);
+    
+    // now convert pitchbend in semitones to 14-bit pitchwheel position:
+    float pitchwheel = deltaX > 0.0
+            ? map (deltaX, 0.0, pitchBendRange, 8192.0, 16383.0)
+            : map (deltaX, -pitchBendRange, 0.0, 0.0, 8192.0);
+
+    return clamp (0, 16383, int (pitchwheel));
+}
+
+float NoteGridBase_transformPitchForHideMode (int touchIndex, float deltaX)
+{
+    if (! NoteGridBase_hideMode)
+        return deltaX;
+
+    // interpolate between actual pitches of pads left and right to x
+
+    int deltaXLeft = deltaX < 0 ? int (deltaX) - 1 : int (deltaX);
+    int initialPadIndex = NoteGridBase_Touch_getPad (touchIndex);
+
+    int padIndexLeft = deltaXLeft + initialPadIndex;
+    int padIndexRight = padIndexLeft + 1;
+
+    // rows are incrementing when going down, not up!
+    // if padIndexLeft/Right is outside of the edges of the block, you need
+    // to explicitly add/subtract two rows to compensate.
+    if (mod (padIndexLeft, NoteGridBase_size) == NoteGridBase_size - 1)
+    {
+        if (deltaX < 0)
+            padIndexLeft += 2 * NoteGridBase_size;
+
+        else if (deltaX > 0)
+            padIndexRight -= 2 * NoteGridBase_size;
+    }
+
+    float pitchLeft = NoteGridBase_getNoteForPad (padIndexLeft);
+    float pitchRight = NoteGridBase_getNoteForPad (padIndexRight);
+
+    float deltaPitch = deltaX - float (deltaXLeft);
+    float pitch = (pitchLeft * (1 - deltaPitch)) + (pitchRight * deltaPitch);
+
+    return pitch - float (NoteGridBase_Pad_getNote (initialPadIndex));
+}
+
+//==============================================================================
+int NoteGridBase_getYAxisValue (int touchIndex, float y)
+{
+    if (getLocalConfig (ConfigId_slideMode) == 0)
+        return clamp (0, 127, int (127 - int (y * 63.5)));
+
+    if (getLocalConfig (ConfigId_slideMode) == 1)
+        return NoteGridBase_getYAxisBipolar (touchIndex, y);
+
+    float yDelta = NoteGridBase_touchInitialY[touchIndex] - y;
+
+    y = 0.5 + (NoteGridBase_applyCurve (yDelta * 0.5));
+
+    return clamp (0, 127, int (y * 127));
+}
+
+int NoteGridBase_getYAxisBipolar (int touchIndex, float y)
+{
+    float yDelta = abs (y - NoteGridBase_touchInitialY[touchIndex]);
+
+    y = NoteGridBase_applyCurve (yDelta * 0.5);
+
+    return clamp (0, 127, int (y * 127));
+}
+
+// Faster with lower value
+float NoteGridBase_applyCurve (float yDelta)
+{
+    float scaler = float (getLocalConfig (ConfigId_slideSensitivity)) / 127.0;
+
+    if (scaler > 0.0)
+        return yDelta / scaler;
+    else
+        return yDelta;
+}
+
+//==== Touch List ==============================================================
+int NoteGridBase_getNumTouchesInList()
+{
+    int indexInList = 0;
+
+    while (NoteGridBase_Touch_getTouchByHistory (indexInList) != 0xff && indexInList < NoteGridBase_maxNumTouches)
+        ++indexInList;
+
+    return indexInList;
+}
+
+void NoteGridBase_addTouchToList (int touchIndex)
+{
+    int endOfList = NoteGridBase_getNumTouchesInList();
+    
+    if (endOfList < NoteGridBase_maxNumTouches)
+        NoteGridBase_Touch_setTouchByHistory (touchIndex, endOfList);
+}
+
+void NoteGridBase_removeTouchFromList (int touchIndex)
+{
+    bool touchFound = false;
+    int numTouches = NoteGridBase_getNumTouchesInList();
+
+    for (int i = 0; i < numTouches; ++i)
+    {
+        int touch = NoteGridBase_Touch_getTouchByHistory (i);
+
+        if (touch == touchIndex)
+            touchFound = true;
+
+        if (touchFound)
+        {
+            NoteGridBase_Touch_setTouchByHistory (NoteGridBase_Touch_getTouchByHistory (i + 1), i);
+
+            if (i == numTouches - 1)
+                NoteGridBase_Touch_setTouchByHistory (0xff, i);
+        }
+    }
+}
+
+//==== Glide Lock ==============================================================
+void NoteGridBase_resetGlideLockToNote (int note, int channel)
+{
+    NoteGridBase_glideLockInitialNote = note;
+    NoteGridBase_glideLockChannel = channel;
+    NoteGridBase_glideLockTarget = 8192.0;
+}
+
+int NoteGridBase_getGlideLockRate()
+{
+    return int (map (float (getLocalConfig (ConfigId_glideLockRate)), 0.0, 127.0, 16.0, 3000.0));
+}
+
+void NoteGridBase_setGlideLockTarget (int note)
+{
+    float delta = float (note - NoteGridBase_glideLockInitialNote);
+    NoteGridBase_glideLockTarget = NoteGridBase_getPitchWheelFromDeltaX (delta);
+    sendPitchBend (NoteGridBase_glideLockChannel, int (NoteGridBase_glideLockTarget), NoteGridBase_getGlideLockRate());
+}
+
+//==== Util ====================================================================
+int NoteGridBase_roundDownDivide (int a, int b)
+{
+    if (b == 0)
+        return 0;
+
+    if (a >= 0)
+        return a / b;
+
+    return (a - b + 1) / b;
+}

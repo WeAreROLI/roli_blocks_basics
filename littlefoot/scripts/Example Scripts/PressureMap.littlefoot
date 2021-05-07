@@ -1,0 +1,21 @@
+/*
+<metadata description="Pressure Map">
+</metadata>
+*/
+
+void touchStart (int index, float x, float y, float z, float vz)
+{
+   addPressurePoint (0xffffff, x, y, z * 100.0);
+}
+   
+void touchMove (int index, float x, float y, float z, float vz)
+{
+   addPressurePoint (0xffffff, x, y, z * 20.0);
+}
+   
+void repaint()
+{
+    clearDisplay();
+    drawPressureMap();
+    fadePressureMap();
+}

@@ -1,0 +1,578 @@
+/*
+<metadata target="Loop;Live;Touch;Developer Control">
+</metadata>
+*/
+
+/* -----------------------------------------------------------------------------
+ *
+ * CONTROL BLOCK FACTORY PROGRAM
+ * 
+ * Copyright ROLI Ltd 2017
+ *
+ * Authors:
+ *     Chris Slater
+ *     Paul Chana
+ *
+ * ---------------------------------------------------------------------------*/ 
+
+/* -----------------------------------------------------------------------------
+ * Heap Map:
+ * 0:   10 x 4      Current colour Config
+ * 40:  10 x 4      Current button config
+ * ---------------------------------------------------------------------------*/ 
+ 
+#heapsize: 80
+
+/* -----------------------------------------------------------------------------
+ * BLOCK TYPES
+ * ---------------------------------------------------------------------------*/ 
+const int lightPadBlock  = 1;
+const int liveBlock      = 2;
+const int loopBlock      = 3;
+const int developerBlock = 4;
+const int touchBlock     = 5;
+const int seaboardBlock  = 6;
+const int lumiKeysBlock  = 8;
+
+/* -----------------------------------------------------------------------------
+ * PREDEFINED COLOURS
+ * The user can change the colours being used in both modes, but by default these
+ * are the colours that we use
+ * ---------------------------------------------------------------------------*/ 
+const int cyan    = 0xFF00FFFF;
+const int white   = 0xFFFFFFFF;
+const int magenta = 0xFFFF00FF;
+const int red     = 0xFFFF0000;
+const int green   = 0xFF00FF00;
+
+/* -----------------------------------------------------------------------------
+ * BUTTON MODES
+ * These correspond to the internal firmware modes, and define the button 
+ * behaviour
+ * ---------------------------------------------------------------------------*/
+const int toggle   = 0x00;
+const int pulse    = 0x01;
+const int gate     = 0x02;
+const int trigger  = 0x03;
+const int cycle    = 0x04;
+const int incDec   = 0x05;
+const int triState = 0x06;
+
+/* -----------------------------------------------------------------------------
+ * BEHAVIOUR MODES
+ * What mode are we in? Internal 'control other blocks / send sysex to DAW' mode
+ * or the midi CC mode?
+ * ---------------------------------------------------------------------------*/
+const int internal = 0x00;
+const int midiCC   = 0x01;
+const int sysex    = 0x02;
+
+/* -----------------------------------------------------------------------------
+ * MIDI VALUES
+ * Some quick and dirty constants to let us specify midi ranges
+ * ---------------------------------------------------------------------------*/
+const int minMidi     = 0x00;
+const int maxChannel  = 0x10;
+const int maxMidi     = 0x7F;
+const int baseCCIndex = 0x66;
+
+/* -----------------------------------------------------------------------------
+ * CONFIG INDICIES
+ * Some quick and dirty constants to let us specify midi ranges
+ * ---------------------------------------------------------------------------*/
+const int channelConfigID      = 0;       /**< Global Midi Channnel */
+const int modeConfigID         = 64;      /**< Index for changing of modes */
+const int resetConfigID        = 65;      /**< Set this to zero to reset all configs */
+const int buttonDataConfigID   = 66;      /**< Packed data for each button. Starts here and increments for each button */
+const int buttonColOnConfigID  = 76;      /**< On colour for each button. Starts here and increments for each button */
+const int buttonColOffConfigID = 86;      /**< Off colour for each button. Starts here and increments for each button */
+const int maxConfigID          = 95;
+
+/* -----------------------------------------------------------------------------
+ * IMPORTANT BUTTON INDICIES
+ * ---------------------------------------------------------------------------*/
+const int powerButtonIndex        = 0;
+const int internalModeButtonIndex = 1;
+const int ccModeButtonIndex       = 2;
+const int resetButtonIndex        = 4;
+const int zeroConfigButtonIndex   = 7;
+
+/* -----------------------------------------------------------------------------
+ * OTHERS...
+ * ---------------------------------------------------------------------------*/
+const int numberOfButtons    = 10;
+const int noButtonHeld       = -1;
+const int heldButtonTimeout  = 1500;
+const int resetButtonTimeout = 10000; 
+const int numberOfDNAPorts   = 6;
+
+/* -----------------------------------------------------------------------------
+ * GLOBAL VARIABLES
+ * ---------------------------------------------------------------------------*/
+int currentMode;                            /**< What is our mode (used to determine if its been changed) */
+int lastMode;                               /**< Previous mode for tracking change */
+int heldButtonIndex;                        /**< Is a button held? -1 indicates not */
+int heldButtonTimeDown;                     /**< What msec time did the button get pressed? */
+bool connectedToAnotherBlock;
+
+void buttonSetColour (int index, int colour)           { setHeapInt (index * 4, colour); }
+int  buttonGetColour (int index)                       { return getHeapInt (index * 4); }
+void buttonSetConfig (int index, int config)           { setHeapInt (40 + (index * 4), config); }
+int  buttonGetConfig (int index)                       { return getHeapInt (40 + (index * 4)); }
+
+/* -----------------------------------------------------------------------------
+ * BUTTON HANDLERS
+ * ---------------------------------------------------------------------------*/ 
+void handleButtonDown (int index)
+{
+    stopTrackingButtonPress();      
+    
+    if (canButtonBeHeld (index))
+        startTrackingButtonPress (index);
+    
+    onControlPress (index);
+}
+
+void handleButtonUp (int index)
+{
+    stopTrackingButtonPress();
+    onControlRelease (index);
+}
+
+bool canButtonBeHeld (int index)
+{
+    return (index == internalModeButtonIndex || index == ccModeButtonIndex || index == zeroConfigButtonIndex);
+}
+
+void startTrackingButtonPress (int index)
+{
+    heldButtonIndex    = index;
+    heldButtonTimeDown = getMillisecondCounter();
+}
+
+void stopTrackingButtonPress()
+{
+    heldButtonIndex    = noButtonHeld;
+    heldButtonTimeDown = 0;
+}
+
+int getTimeoutForHeldButton()
+{
+    if (heldButtonIndex == zeroConfigButtonIndex)
+        return resetButtonTimeout;
+    
+    return heldButtonTimeout;
+}
+
+void beginReset()
+{
+    setLocalConfig (resetConfigID, 0x00);
+    disconnectFromOtherBlocks();
+}
+
+void updateHeldButton()
+{
+    if (canButtonBeHeld (heldButtonIndex) && (getMillisecondCounter() - heldButtonTimeDown > getTimeoutForHeldButton()))
+    {
+        if (heldButtonIndex == internalModeButtonIndex)
+            setLocalConfig (modeConfigID, internal);
+            
+        if (heldButtonIndex == ccModeButtonIndex)
+            setLocalConfig (modeConfigID, midiCC);
+            
+        if (heldButtonIndex == zeroConfigButtonIndex)
+            beginReset();
+            
+        stopTrackingButtonPress();
+        initialiseMode();
+    }
+}
+
+/* -----------------------------------------------------------------------------
+ * PAINTING
+ * ---------------------------------------------------------------------------*/ 
+void repaint()
+{
+    checkFlagAndResetConfigToDefaultValues();   
+
+    clearDisplay();
+    repaintControl();
+
+    connectToBlock();
+    
+    updateHeldButton();
+    updateCurrentMode();
+    updateIfInMidiCCMode();
+    updateInternalModeColours();
+}
+
+/* -----------------------------------------------------------------------------
+ * BLOCK CONNECTIONS
+ * ---------------------------------------------------------------------------*/ 
+void connectToBlock()
+{
+    if (connectedToAnotherBlock)
+        return;
+    
+    if (currentMode == midiCC)
+        return;
+
+    for (int dnaPortIndex = 0; dnaPortIndex < numberOfDNAPorts; ++dnaPortIndex)
+    {
+        int idOnPort = getBlockIDOnPort (dnaPortIndex);
+        if (canConnectToBlockOnPort (idOnPort))
+        {
+            connectToBlockOnPort (idOnPort);
+            return;
+        }
+    }
+}
+
+void disconnectFromOtherBlocks()
+{
+    linkBlockIDtoController (0);
+    connectedToAnotherBlock = false;
+}
+
+void connectToBlockOnPort (int idOnPort)
+{
+    linkBlockIDtoController (idOnPort);
+    connectedToAnotherBlock = true;
+}
+
+bool canConnectToBlockOnPort (int idOnPort)
+{
+    int type = getBlockTypeForID (idOnPort);
+
+    if (type == lightPadBlock || type == seaboardBlock || type == lumiKeysBlock)
+        return true;
+        
+    return false;
+}
+
+/* -----------------------------------------------------------------------------
+ * INITIALISATION
+ * ---------------------------------------------------------------------------*/ 
+void initialise()
+{
+    disconnectFromOtherBlocks();
+    stopTrackingButtonPress();
+    makeConfigsActive();
+    initialiseMode();
+    storeButtonColourUIDs();
+}
+
+void makeConfigsActive()
+{
+    int maxConfig = maxConfigID;
+    for (int configID = 0; configID <= maxConfig; ++configID)
+        setLocalConfigActiveState (configID, false, false);
+        
+    setLocalConfigItemRange (modeConfigID, internal, midiCC + 1);
+    setLocalConfigActiveState (modeConfigID, true, true);
+    
+    setLocalConfigItemRange (resetConfigID, 0, 0x7F);
+    setLocalConfigActiveState (resetConfigID, true, true);
+    
+    setLocalConfigItemRange (channelConfigID, minMidi,  maxChannel);
+    setLocalConfigActiveState (channelConfigID, true, true);
+    
+    for (int buttonIndex = 0; buttonIndex < numberOfButtons; ++buttonIndex)
+    {
+        setLocalConfigActiveState (buttonDataConfigID + buttonIndex, true, true);
+        setLocalConfigActiveState (buttonColOnConfigID + buttonIndex,   true, true);
+        setLocalConfigActiveState (buttonColOffConfigID + buttonIndex,  true, true);
+        
+        setLocalConfigItemRange (buttonDataConfigID + buttonIndex, 0x80000000, 0x7FFFFFFF);
+        setLocalConfigItemRange (buttonColOnConfigID + buttonIndex,   0x80000000, 0x7FFFFFFF);
+        setLocalConfigItemRange (buttonColOffConfigID + buttonIndex,  0x80000000, 0x7FFFFFFF);
+    }
+    
+    checkFlagAndResetConfigToDefaultValues();
+}
+
+void storeButtonColourUIDs()
+{    
+    for (int i = 0; i < 10; ++i)
+        buttonSetColour (i, getLocalConfig (buttonColOffConfigID + i) + getLocalConfig (buttonColOnConfigID + i));
+}
+
+bool hasButtonColourChanged (int buttonIndex, int colourUID)
+{
+    return colourUID != (getLocalConfig (buttonColOffConfigID + buttonIndex) + getLocalConfig (buttonColOnConfigID + buttonIndex));
+}
+
+bool hasButtonColourChanged (int buttonIndex)
+{
+    if (buttonIndex < 10)
+        return hasButtonColourChanged (buttonIndex, buttonGetColour (buttonIndex));
+    
+    return false;
+}
+
+void updateButtonColour (int buttonIndex)
+{
+    setButtonColours (buttonIndex, getLocalConfig (buttonColOnConfigID + buttonIndex), getLocalConfig (buttonColOffConfigID + buttonIndex));
+}
+
+void updateInternalModeColours()
+{
+    if (currentMode == midiCC) 
+        return;
+
+    bool wantsUpdate = false;
+
+    for (int i = 0; i < 10; ++i)
+        if (hasButtonColourChanged (i))
+            wantsUpdate = true;
+                       
+    if (wantsUpdate)
+    {
+        initialiseToInternalMode();
+        storeButtonColourUIDs();
+    }
+}
+
+void checkFlagAndResetConfigToDefaultValues()
+{
+    if (getLocalConfig (resetConfigID) != 0)
+        return;
+        
+    resetConfigToDefaultValues();
+    
+    setLocalConfig (resetConfigID, 0x7F);
+}
+
+void resetConfigToDefaultValues()
+{
+    log (-789);
+
+    for (int buttonIndex = 0; buttonIndex < numberOfButtons; ++buttonIndex)
+    {
+        int config = packButtonConfig (0x64, 0x00, 0x7F, baseCCIndex + buttonIndex, gate);
+        setLocalConfig (buttonDataConfigID + buttonIndex, config);
+        setLocalConfig (buttonColOnConfigID + buttonIndex,   getOnColourForButton (buttonIndex));
+        setLocalConfig (buttonColOffConfigID + buttonIndex,  getOffColourForButton (buttonIndex));
+    }
+    
+    setLocalConfig (modeConfigID, internal);
+    initialiseMode();
+}
+
+/* -----------------------------------------------------------------------------
+ * MODE INITIALISATION ROUTINES
+ * ---------------------------------------------------------------------------*/ 
+void initialiseMode()
+{
+    currentMode = getLocalConfig (modeConfigID);
+    
+    if (currentMode < internal || currentMode > midiCC) 
+        currentMode = internal;
+
+    if (currentMode == internal) 
+        initialiseToInternalMode();
+        
+    if (currentMode == midiCC)   
+        initialiseToMidiCCMode();
+        
+    lastMode = currentMode;
+}
+
+void updateCurrentMode()
+{
+    if (getLocalConfig (modeConfigID) != currentMode)
+        initialiseMode();
+}
+
+void initialiseToInternalMode()
+{
+    int type = getBlockTypeForID (getBlockIDForIndex(0));
+    
+    if (type == liveBlock)       liveBlockInitialiseInternal();
+    if (type == loopBlock)       loopBlockInitialiseInternal();
+    if (type == developerBlock)  developerBlockInitialiseInternal();
+    if (type == touchBlock)      touchBlockInitialiseInternal();
+}
+
+void liveBlockInitialiseInternal()
+{
+    initControl (0, cycle,  internal,   4,        1,       5,  20, getOnColourForButton (0),    getOffColourForButton (0));
+    initControl (1, incDec, midiCC,   100,  minMidi, maxMidi,   7, getOnColourForButton (1),    getOffColourForButton (1));
+    initControl (2, incDec, internal,   0,        0,      18,  22, getOnColourForButton (2),    getOffColourForButton (2));
+    initControl (3, incDec, internal,   0,        0,      14,  24, getOnColourForButton (3),    getOffColourForButton (3));
+    initControl (4, gate,   midiCC,     0,  minMidi, maxMidi, 106, getOnColourForButton (4),    getOffColourForButton (4));
+    initControl (5, toggle, midiCC,     0,  minMidi, maxMidi,  64, getOnColourForButton (5),    getOffColourForButton (5));
+    initControl (6, incDec, internal,   0,       -7,       7,   4, getOnColourForButton (6),    getOffColourForButton (6));
+    initControl (7, gate,   midiCC,     0,  minMidi, maxMidi, 117, getOnColourForButton (7),    getOffColourForButton (7));
+    initControl (8, gate,   midiCC,     0,  minMidi, maxMidi, 118, getOnColourForButton (8),    getOffColourForButton (8));
+    initControl (9, gate,   midiCC,     0,  minMidi, maxMidi, 119, getOnColourForButton (9),    getOffColourForButton (9));
+}
+
+void developerBlockInitialiseInternal()
+{
+    for (int i = 0; i < 10; ++i)
+        initControl (i, gate, midiCC, 0,  minMidi, maxMidi, 102 + i, getOnColourForButton (i), getOffColourForButton (i));
+}
+
+void loopBlockInitialiseInternal()
+{
+    initControl (0,    cycle,   internal, 4,         1,       5,  20, getOnColourForButton (0),  getOffColourForButton (0));
+    initControl (1,    incDec,    midiCC, 100, minMidi, maxMidi,   7, getOnColourForButton (1),  getOffColourForButton (1));
+    initControl (2,    gate,      midiCC, 0,   minMidi, maxMidi, 104, getOnColourForButton (2),  getOffColourForButton (2));
+    initControl (3,    gate,      midiCC, 0,   minMidi, maxMidi, 105, getOnColourForButton (3),  getOffColourForButton (3));
+    initControl (4,    trigger,    sysex, 0,         0,       0, 106, getOnColourForButton (4),  getOffColourForButton (4));
+    initControl (5,    toggle,     sysex, 0,         0,       1, 115, getOnColourForButton (5),  getOffColourForButton (5));
+    initControl (6,    toggle,     sysex, 6,         6,       5, 116, getOnColourForButton (6),  getOffColourForButton (6));
+    initControl (7,    gate,      midiCC, 0,   minMidi, maxMidi, 117, getOnColourForButton (7),  getOffColourForButton (7));
+    initControl (8,    trigger,    sysex, 7,         7,       4, 118, getOnColourForButton (8),  getOffColourForButton (8));
+    initControl (9,    trigger,    sysex, 7,         7,       3, 119, getOnColourForButton (9),  getOffColourForButton (9));
+}
+
+void touchBlockInitialiseInternal()
+{
+    initControl (0, incDec,   internal, 127, minMidi, maxMidi,  10, getOnColourForButton (0), getOffColourForButton (0));
+    initControl (1, incDec,   internal, 127, minMidi, maxMidi,  11, getOnColourForButton (1), getOffColourForButton (1));
+    initControl (2, incDec,   internal, 127, minMidi, maxMidi,  12, getOnColourForButton (2), getOffColourForButton (2));
+    initControl (3, incDec,   internal, 127, minMidi, maxMidi,  13, getOnColourForButton (3), getOffColourForButton (3));
+    initControl (4, incDec,   internal, 127, minMidi, maxMidi,  14, getOnColourForButton (4), getOffColourForButton (4));
+    initControl (5, toggle,   internal,   0, minMidi,       1,  15, getOnColourForButton (5), getOffColourForButton (5));
+    initControl (6, triState, internal,   0, minMidi, maxMidi,  18, getOnColourForButton (6), getOffColourForButton (6));
+    initControl (7, toggle,   internal,   0, minMidi,       1,  17, getOnColourForButton (7), getOffColourForButton (7));
+    initControl (8, gate,     midiCC,     0, minMidi, maxMidi, 118, getOnColourForButton (8), getOffColourForButton (8));
+    initControl (9, gate,     midiCC,     0, minMidi, maxMidi, 119, getOnColourForButton (9), getOffColourForButton (9));
+    setButtonTriState (6, 19);
+}
+
+void initialiseToMidiCCMode()
+{
+    for (int buttonIndex = 0; buttonIndex < numberOfButtons; ++buttonIndex)
+        initialiseMidiCCControlFromConfig (buttonIndex);
+        
+    if (connectedToAnotherBlock)
+        disconnectFromOtherBlocks();
+}
+
+void updateIfInMidiCCMode()
+{
+    if (currentMode == midiCC)   
+        initialiseToMidiCCMode();
+}
+
+void initialiseMidiCCControlFromConfig (int buttonIndex)
+{
+    int config    = getLocalConfig (buttonDataConfigID + buttonIndex);
+    int onColour  = getOnColourForButton (buttonIndex);
+    int offColour = getOffColourForButton (buttonIndex);
+
+    bool needsToUpdateConfig = false;
+    bool needsToUpdateColours = hasButtonColourChanged (buttonIndex);
+    
+    if (! needsToUpdateColours && buttonGetConfig (buttonIndex) == config && lastMode == midiCC)
+        return;
+
+    int value = ((config >> 24) & 0x7F);
+    int max   = ((config >> 17) & 0x7F);
+    int min   = ((config >> 10) & 0x7F);
+    int cc    = ((config >> 3) & 0x7F);
+    int mode  = ((config) & 0x7);
+    
+    if (max < 2)
+    {
+        max = clamp (max, 2, 0x7F);
+        needsToUpdateConfig = true;
+    }
+    
+    if (min >= max)
+    {
+        min = clamp (min, 0, max - 1);
+        needsToUpdateConfig = true;
+    }
+    
+    if (value < min || value > max)
+    {
+        value = clamp (value, min, max);
+        needsToUpdateConfig = true;
+    }
+    
+    if (mode == toggle || mode == pulse)
+    {
+        if (value != max && value != min)
+        {
+            value = max;
+            needsToUpdateConfig = true;
+        }
+    }
+
+    initControl (buttonIndex, mode, midiCC, value, min, max, cc, onColour, offColour);
+    
+    if (needsToUpdateConfig)
+    {
+        config = packButtonConfig (value, min, max, cc, mode);
+        setLocalConfig (buttonDataConfigID + buttonIndex, config);
+    }
+    
+    if (needsToUpdateColours)
+        storeButtonColourUIDs();
+        
+    buttonSetConfig (buttonIndex, getLocalConfig (buttonDataConfigID + buttonIndex));
+}
+
+int packButtonConfig (int value, int minVal, int maxVal, int cc, int mode)
+{
+    return ((value & 0x7F) << 24)  | 
+           ((maxVal & 0x7F) << 17) | 
+           ((minVal & 0x7F) << 10) | 
+           ((cc & 0x7F) << 3)      | 
+           (mode & 0x7);
+}
+
+int getDefaultOnColourForButton (int buttonIndex)
+{
+    int type = getBlockTypeForID (getBlockIDForIndex(0));
+    
+    if (type == liveBlock && buttonIndex == 7)
+        return magenta;
+
+    if (type == loopBlock)
+    {
+        if (buttonIndex == 5)
+            return green;
+
+        if (buttonIndex == 6)
+            return red;
+            
+    }
+
+   return cyan;
+}
+
+int getDefaultOffColourForButton (int buttonIndex)
+{
+    return white;
+}
+
+int getOnColourForButton (int buttonIndex)
+{
+    int colour = getLocalConfig (buttonColOnConfigID + buttonIndex);
+
+    if (colour == 0)
+    {
+        log (-888);
+        return getDefaultOnColourForButton (buttonIndex);
+    }
+
+    return colour;
+}
+
+int getOffColourForButton (int buttonIndex)
+{
+    int colour = getLocalConfig (buttonColOffConfigID + buttonIndex);
+
+    if (colour == 0)
+    {
+        log (-999);
+        return getDefaultOffColourForButton (buttonIndex);
+    }
+
+    return colour;
+}

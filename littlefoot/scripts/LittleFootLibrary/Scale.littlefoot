@@ -1,0 +1,59 @@
+
+int Scale_getScaleBitMask (int index)
+{
+    if (index == 0)   return 0xab5;  // major
+    if (index == 1)   return 0x5ad;  // minor
+    if (index == 2)   return 0x9ad;  // harmonic minor
+    if (index == 3)   return 0x4a5;  // pentatonic neutral
+    if (index == 4)   return 0x295;  // pentatonic major
+    if (index == 5)   return 0x4a9;  // pentatomic minor
+    if (index == 6)   return 0x4e9;  // blues
+    if (index == 7)   return 0x6ad;  // dorian
+    if (index == 8)   return 0x5ab;  // phrygian
+    if (index == 9)   return 0xad5;  // lydian
+    if (index == 10)  return 0x6b5;  // mixolydian
+    if (index == 11)  return 0x56b;  // locrian
+    if (index == 12)  return 0x555;  // whole tone
+    if (index == 13)  return 0xb6d;  // arabic (A)
+    if (index == 14)  return 0x575;  // arabic (B)
+    if (index == 15)  return 0x8d1;  // japanese
+    if (index == 16)  return 0x8b1;  // ryukyu
+    if (index == 17)  return 0x57b;  // 8-tone spanish
+
+    return 0xfff;  // chromatic
+}
+
+int Scale_getNumNotesInScale (int scaleBitmask)
+{
+    int count;
+    
+    for (int pos = 0; pos < 12; ++pos)
+        if (scaleBitmask & (0x01 << pos))
+            ++count;
+
+    return count;
+}
+
+bool Scale_isPartOfScale (int noteRelativeToTonic, int scaleBitmask)
+{
+    int noteAsBitSet = 0x01 << (mod (noteRelativeToTonic, 12));
+    return (noteAsBitSet & scaleBitmask) != 0;
+}
+
+int Scale_findNthNoteInScale (int n, int scaleBitmask)
+{
+    int count = 0;
+
+    for (int pos = 0; pos < 12; ++pos)
+    {
+        if (scaleBitmask & (0x01 << pos))
+        {
+            if (count == n)
+                return pos;
+
+            count++;
+        }
+    }
+
+    return -1;
+}
