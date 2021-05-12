@@ -36,6 +36,7 @@ enum BlockConfigId
     octaveTopology      = 8,
     midiChannelRange    = 9,
     MPEZone             = 40,
+    keyPitchBendAmount  = 41,
     // Touch
     velocitySensitivity = 10,
     glideSensitivity    = 11,
