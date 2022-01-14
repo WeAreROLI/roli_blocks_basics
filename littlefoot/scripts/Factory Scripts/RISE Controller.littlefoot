@@ -2,9 +2,10 @@
 <metadata description="Turn your Lightpad Block into the control panel of the Seaboard RISE." details="This app emulates the side controls on a Seaboard RISE. Use the mode button to switch between sliders and XY pad which all map automatically to preset macros in Equator." target="Lightpad" tags="Controller;MIDI"  canEmbedModes="false">
     
     <groups>
-        <group name="xyzpad" displayName="XYZ Pad" />
-        <group name="sliders" displayName="Sliders" />
-        <group name="colours" displayName="Colors" />
+        <group name="Global" displayName="Global" columnSpan="25"/>    
+        <group name="xyzpad" displayName="XYZ Pad" columnSpan="2"/>
+        <group name="sliders" displayName="Sliders" columnSpan="3"/>
+        <group name="colours" displayName="Colors" columnSpan="25"/>
     </groups>
 
     <variables>

@@ -4,8 +4,9 @@
           tags="MIDI;Melodic;Controller;">
 
     <groups>
-        <group name="pads" displayName="Pad *" count="25" />
-        <group name="colours" displayName="Pad Colors" />
+        <group name="Global" displayName="Global" columnSpan="10"/>
+        <group name="pads" displayName="Pad *" count="25" columnSpan="5"/>
+        <group name="colours" displayName="Pad Colors" columnSpan="5"/>
     </groups>
     <variables>
         <variable name="gridOption" displayName="Grid Size" type="option" value="4x4" options="1x1;2x2;3x3;4x4;5x5;" tooltip="Select the number of pads in the grid" />
