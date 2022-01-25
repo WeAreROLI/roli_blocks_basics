@@ -583,6 +583,17 @@ private:
             jassertfalse;
             return 0;
         }
+        
+        static int getNeighbourRotation (Block::Ptr block,
+                                         Block::ConnectionPort port,
+                                         Block::ConnectionPort neighbourPort)
+        {
+            auto rotation = 2 + block->getRotation()
+                            + getRotationForEdge (port.edge)
+                            - getRotationForEdge (neighbourPort.edge);
+            
+            return juce::negativeAwareModulo (rotation, 4);
+        }
 
         static void layoutNeighbours (const Block::Ptr block,
                                       const BlockTopology& topology,
@@ -607,16 +618,12 @@ private:
                         const auto  myOffset    = getUnitForIndex (block, myPort.edge, myPort.index);
                         const auto  theirOffset = getUnitForIndex (neighbourPtr, theirPort.edge, theirPort.index);
 
-                        {
-                            const auto neighbourRotation = (2 + block->getRotation()
-                                                            + getRotationForEdge (myPort.edge)
-                                                            - getRotationForEdge (theirPort.edge)) % 4;
+                        const auto neighbourRotation = getNeighbourRotation (block, myPort, theirPort);
 
-                            if (neighbour->rotation != neighbourRotation)
-                            {
-                                neighbour->rotation = neighbourRotation;
-                                updated.addIfNotAlreadyThere (neighbourPtr);
-                            }
+                        if (neighbour->rotation != neighbourRotation)
+                        {
+                            neighbour->rotation = neighbourRotation;
+                            updated.addIfNotAlreadyThere (neighbourPtr);
                         }
 
                         std::pair<int, int> delta;
@@ -637,6 +644,7 @@ private:
                                 delta = { -theirBounds.width, (myBounds.height - (myOffset + 1)) - theirOffset };
                                 break;
                             default:
+                                jassertfalse;
                                 break;
                         }
 
