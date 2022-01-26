@@ -67,7 +67,7 @@ struct BlockConfigManager
     void setDeviceIndex (TopologyIndex newDeviceIndex)                       { deviceIndex = newDeviceIndex; }
     void setDeviceComms (PhysicalTopologySource::DeviceConnection* newConn)  { deviceConnection = newConn; }
 
-    static constexpr juce::uint32 numConfigItems = 96;
+    static constexpr juce::uint32 numConfigItems = 97;
 
     static constexpr const char* midiSettingsGroup = "MIDI Settings";
     static constexpr const char* pitchGroup = "Pitch";
@@ -91,6 +91,7 @@ struct BlockConfigManager
         { midiChannelRange,     15,     1,      15,         false,  "No. MIDI Channels",    ConfigType::integer,    {},               midiSettingsGroup },
         { MPEZone,              0,      0,      1,          false,  "MPE Zone",             ConfigType::options,    { "Lower Zone",
                                                                                                                   "Upper Zone"},      midiSettingsGroup },
+        { keyPitchBendAmount,   1,      1,      12,         false,  "Key Pitch Bend Amount",ConfigType::integer,    {},               midiSettingsGroup },
         { octave,               0,      -4,     6,          false,  "Octave",               ConfigType::integer,    {},               pitchGroup },
         { transpose,            0,      -11,    11,         false,  "Transpose",            ConfigType::integer,    {},               pitchGroup },
         { slideCC,              74,     0,      127,        false,  "Slide CC",             ConfigType::integer,    {},               playGroup },
