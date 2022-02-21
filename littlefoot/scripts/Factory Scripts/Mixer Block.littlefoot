@@ -3,7 +3,8 @@
           target="Lightpad" 
           tags="MIDI;Controller;Mixing;">
 	<groups>
-        <group name="channel" displayName="Channel *" count="4" />
+        <group name="Global" displayName="Global" columnSpan="25"/>
+        <group name="channel" displayName="Channel *" count="4" columnSpan="1"/>
 	</groups>
 	<variables>
         <variable name="midiChannel" displayName="MIDI Channel" type="int" min="1" max="16" value="1" displayMode="stepper" tooltip="The MIDI channel that values are sent on" />

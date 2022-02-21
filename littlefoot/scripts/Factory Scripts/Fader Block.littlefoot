@@ -3,7 +3,8 @@
           target="Lightpad" 
           tags="MIDI;Controller;Mixing;" canEmbedModes="false">
     <groups>
-        <group name="sliders" displayName="Fader *" count="16" />
+        <group name="Global" displayName="Global" columnSpan="16"/>
+        <group name="sliders" displayName="Fader *" count="16"/>
     </groups>
 	<variables>
 	    <variable name="midiChannel" displayName="MIDI Channel" type="int" min="1" max="16" value="1" displayMode="stepper" tooltip="The MIDI channel that values are sent on" />

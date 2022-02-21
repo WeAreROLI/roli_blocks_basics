@@ -4,38 +4,40 @@
 <metadata description="Play drums with your Lightpad Block." details="This App loads a drum grid onto your Lightpad Block with multiple MIDI modes and layouts for use with clip launchers and drum instruments." target="Lightpad" tags="MPE;MIDI;Drum">
 
     <groups>
-      <group name="colours" displayName="Colors" />
+      <group name="Global" displayName="Global" displayIndex="2" columnSpan="2"/>
+      <group name="Colors" displayName="Colors" displayIndex="1"/>
     </groups>
 
     <variables>
-      <variable name="baseNote" displayName="Base note" type="midiNote" min="C-2" max="E7" value="C1"/>
-      <variable name="gridSize" displayName="Grid size" type="int" min="1" max="4" value="4"/><variable name="fixedStrikeOn" displayName="Fixed strike" type="bool"/>
-      <variable name="fixedStrikeValue" displayName="Fixed strike value" type="int" min="1" max="127" value="127" displayMode="slider"/>      
-      <variable name="trackingMode" displayName="Tracking mode" type="option" displayMode="multiline" value="Last note played" options="Last note on channel;Highest note on channel;Lowest note on channel;" />
-      <variable name="pressType" displayName="Press type" type="option" displayMode="multiline" value="Channel Pressure" options="Channel Pressure;Poly Aftertouch" />
-      <variable name="slideCc" displayName="Slide CC no." type="int" value="74" min="0" max="127" displayMode="menu" />
-      <variable name="slideCoef" displayName="Slide curve" type="float" value="0.0" min="-1.0" max="1.0" displayMode="bipolar" />
-      <variable name="glideEnabled" displayName="Glide enabled" type="bool" value="true" />
-      <variable name="glideRate" displayName="Glide rate" type="float" value="0.5" min="0.0" max="1.0" displayMode="slider" />
-      <variable name="sendPressure" displayName="Send pressure" type="bool" value="true" />
-      <variable name="sendSlide" displayName="Send slide" type="bool" value="true" />
+      <variable name="gridSize" displayName="Grid size" type="int" min="1" max="4" value="4"/>
+      <variable name="fixedStrikeOn" displayName="Fixed strike" group="MIDI Settings" type="bool"/>
+      <variable name="baseNote" displayName="Base note" group="MIDI Settings" type="midiNote" min="C-2" max="E7" value="C1"/>
+      <variable name="fixedStrikeValue" displayName="Fixed strike value" group="MIDI Settings" type="int" min="1" max="127" value="127" displayMode="slider"/>      
+      <variable name="trackingMode" displayName="Tracking mode" group="MIDI Settings" type="option" displayMode="multiline" value="Last note played" options="Last note on channel;Highest note on channel;Lowest note on channel;" />
+      <variable name="pressType" displayName="Press type" group="MIDI Settings" type="option" displayMode="multiline" value="Channel Pressure" options="Channel Pressure;Poly Aftertouch" />
+      <variable name="slideCc" displayName="Slide CC no." group="MIDI Settings" type="int" value="74" min="0" max="127" displayMode="menu" />
+      <variable name="slideCoef" displayName="Slide curve" group="MIDI Settings" type="float" value="0.0" min="-1.0" max="1.0" displayMode="bipolar" />
+      <variable name="glideEnabled" displayName="Glide enabled" group="MIDI Settings" type="bool" value="true" />
+      <variable name="glideRate" displayName="Glide rate" type="float" group="MIDI Settings" value="0.5" min="0.0" max="1.0" displayMode="slider" />
+      <variable name="sendPressure" displayName="Send pressure" group="MIDI Settings" type="bool" value="true" />
+      <variable name="sendSlide" displayName="Send slide" group="MIDI Settings" type="bool" value="true" />
 
-      <variable name="padColour1"  displayName="Pad 1 Color" group="colours" type="colour" value="0xffe557da" />
-      <variable name="padColour2"  displayName="Pad 2 Color" group="colours" type="colour" value="0xfff9a366" />
-      <variable name="padColour3"  displayName="Pad 3 Color" group="colours" type="colour" value="0xff4dbdf8" />
-      <variable name="padColour4"  displayName="Pad 4 Color" group="colours" type="colour" value="0xff4dbdf8" />
-      <variable name="padColour5"  displayName="Pad 5 Color" group="colours" type="colour" value="0xffe557da" />
-      <variable name="padColour6"  displayName="Pad 6 Color" group="colours" type="colour" value="0xfff9a366" />
-      <variable name="padColour7"  displayName="Pad 7 Color" group="colours" type="colour" value="0xff4288f7" />
-      <variable name="padColour8"  displayName="Pad 8 Color" group="colours" type="colour" value="0xff4dbdf8" />
-      <variable name="padColour9"  displayName="Pad 9 Color" group="colours" type="colour" value="0xffe557da" />
-      <variable name="padColour10" displayName="Pad 10 Color" group="colours" type="colour" value="0xfff9a366" />
-      <variable name="padColour11" displayName="Pad 11 Color" group="colours" type="colour" value="0xffc38ff8" />
-      <variable name="padColour12" displayName="Pad 12 Color" group="colours" type="colour" value="0xffc38ff8" />
-      <variable name="padColour13" displayName="Pad 13 Color" group="colours" type="colour" value="0xff4288f7" />
-      <variable name="padColour14" displayName="Pad 14 Color" group="colours" type="colour" value="0xff4288f7" />
-      <variable name="padColour15" displayName="Pad 15 Color" group="colours" type="colour" value="0xffc38ff8" />
-      <variable name="padColour16" displayName="Pad 16 Color" group="colours" type="colour" value="0xff4dbdf8" />
+      <variable name="padColour1"  displayName="Pad 1 Color" group="Colors" type="colour" value="0xffe557da" />
+      <variable name="padColour2"  displayName="Pad 2 Color" group="Colors" type="colour" value="0xfff9a366" />
+      <variable name="padColour3"  displayName="Pad 3 Color" group="Colors" type="colour" value="0xff4dbdf8" />
+      <variable name="padColour4"  displayName="Pad 4 Color" group="Colors" type="colour" value="0xff4dbdf8" />
+      <variable name="padColour5"  displayName="Pad 5 Color" group="Colors" type="colour" value="0xffe557da" />
+      <variable name="padColour6"  displayName="Pad 6 Color" group="Colors" type="colour" value="0xfff9a366" />
+      <variable name="padColour7"  displayName="Pad 7 Color" group="Colors" type="colour" value="0xff4288f7" />
+      <variable name="padColour8"  displayName="Pad 8 Color" group="Colors" type="colour" value="0xff4dbdf8" />
+      <variable name="padColour9"  displayName="Pad 9 Color" group="Colors" type="colour" value="0xffe557da" />
+      <variable name="padColour10" displayName="Pad 10 Color" group="Colors" type="colour" value="0xfff9a366" />
+      <variable name="padColour11" displayName="Pad 11 Color" group="Colors" type="colour" value="0xffc38ff8" />
+      <variable name="padColour12" displayName="Pad 12 Color" group="Colors" type="colour" value="0xffc38ff8" />
+      <variable name="padColour13" displayName="Pad 13 Color" group="Colors" type="colour" value="0xff4288f7" />
+      <variable name="padColour14" displayName="Pad 14 Color" group="Colors" type="colour" value="0xff4288f7" />
+      <variable name="padColour15" displayName="Pad 15 Color" group="Colors" type="colour" value="0xffc38ff8" />
+      <variable name="padColour16" displayName="Pad 16 Color" group="Colors" type="colour" value="0xff4dbdf8" />
     </variables>
     
 </metadata>
