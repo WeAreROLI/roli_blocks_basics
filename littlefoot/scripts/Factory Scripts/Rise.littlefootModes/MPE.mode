@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <mode name="MPE">
-  <variable name="UseMPE" value="true"/>
+  <variable name="MIDI Mode" value="MPE"/>
+  <variable name="MPEZone" value="Lower"/>
+  <variable name="MPEChannelRange" value="15"/>
   <variable name="MIDIStartChannel" value="2"/>
   <variable name="MIDIEndChannel" value="16"/>
   <variable name="GlideAndSlideTrackingMode" value="Last Played"/>
+  <variable name="pressMode" value="Channel Pressure"/>
   <variable name="PressureTrackingMode" value="Last Played"/>
   <variable name="Octave" value="0"/>
   <variable name="Transpose" value="0"/>
@@ -14,10 +17,20 @@
   <variable name="SlideSensitivity" value="127"/>
   <variable name="PressureSensitivity" value="127"/>
   <variable name="LiftSensitivity" value="127"/>
+  <variable name="StrikeSensitivityMin" value="0"/>
+  <variable name="StrikeSensitivityMax" value="127"/>
+  <variable name="PressureSensitivityMin" value="0"/>
+  <variable name="PressureSensitivityMax" value="127"/>
+  <variable name="LiftSensitivityMin" value="0"/>
+  <variable name="LiftSensitivityMax" value="127"/>
   <variable name="TouchFader1CC" value="107"/>
   <variable name="TouchFader2CC" value="109"/>
   <variable name="TouchFader3CC" value="111"/>
   <variable name="XYPadXaxisCC" value="113"/>
   <variable name="XYPadYaxisCC" value="114"/>
   <variable name="PedalInputCC1" value=" 64 Sustain Pedal"/>
+  <variable name="SlideCC" value="74"/>
+  <variable name="SlideMode" value="Absolute"/>
+  <variable name="FixedVelocity" value="false"/>
+  <variable name="SemitoneLegato" value="false"/>
 </mode>
