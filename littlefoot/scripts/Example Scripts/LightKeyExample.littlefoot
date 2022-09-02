@@ -1,0 +1,218 @@
+
+/*
+<metadata description="LUMI script that allows configuration of custom key colors." 
+          details="Use BLOCKS Code to load script and configure color parameters. Reset LUMI back to factory settings in Dashboard to restore factory functionality." 
+          target="Lightkey" 
+          tags="LUMI">
+    <groups>
+      <group name="colours" displayName="Colors" />
+    </groups>
+
+    <variables>
+      <variable name="activeColour" displayName="Active Note" group="colours" type="colour" value="0xffffff" />
+      <variable name="C"  displayName="C" group="colours" type="colour" value="0xffe557da" />
+      <variable name="C_"  displayName="C#" group="colours" type="colour" value="0xfff9a366" />
+      <variable name="D"  displayName="D" group="colours" type="colour" value="0xff4dbdf8" />
+      <variable name="D_"  displayName="D#" group="colours" type="colour" value="0xff4dbdf8" />
+      <variable name="E"  displayName="E" group="colours" type="colour" value="0xffe557da" />
+      <variable name="F"  displayName="F" group="colours" type="colour" value="0xfff9a366" />
+      <variable name="F_"  displayName="F#" group="colours" type="colour" value="0xff4288f7" />
+      <variable name="G"  displayName="G" group="colours" type="colour" value="0xff4dbdf8" />
+      <variable name="G_"  displayName="G#" group="colours" type="colour" value="0xffe557da" />
+      <variable name="A" displayName="A" group="colours" type="colour" value="0xfff9a366" />
+      <variable name="A_" displayName="A#" group="colours" type="colour" value="0xffc38ff8" />
+      <variable name="B" displayName="B" group="colours" type="colour" value="0xffc38ff8" />
+    </variables>
+</metadata>
+*/
+
+const int ConfigId_midiStartChannel    = 0;
+const int ConfigId_midiEndChannel      = 1;
+const int ConfigId_midiUseMPE          = 2;
+const int ConfigId_octave              = 4;
+const int ConfigId_midiChannelRange    = 9;
+const int ConfigId_velocitySensitivity = 10;
+const int ConfigId_glideSensitivity    = 11;
+const int ConfigId_slideSensitivity    = 12;
+const int ConfigId_pressureSensitivity = 13;
+const int ConfigId_liftSensitivity     = 14;
+const int ConfigId_MPEZone             = 40;
+const int ConfigId_fixedVelocity       = 15;
+const int ConfigId_fixedVelocityValue  = 16;
+const int ConfigId_gammaCorrection     = 33;
+const int ConfigId_mode              = 20;
+const int ConfigId_mode0_pitchEnable = 102;
+
+const int numKeys = 24;
+int keyChannel[numKeys];
+int keyNoteNumber[numKeys];
+int keyColours[numKeys];
+
+const int numButtons = 3;
+bool buttonDown[numButtons];
+
+void initialise()
+{
+    setUseDefaultKeyHandler (false, false);
+    
+    setLocalConfigActiveState (ConfigId_midiStartChannel, true, true);
+    setLocalConfigActiveState (ConfigId_midiEndChannel, true, true);
+    setLocalConfigActiveState (ConfigId_midiUseMPE, true, true);
+    setLocalConfigActiveState (ConfigId_octave, true, true);
+    setLocalConfigActiveState (ConfigId_midiChannelRange, true, true);
+    setLocalConfigActiveState (ConfigId_MPEZone, true, true);
+    setLocalConfigActiveState (ConfigId_velocitySensitivity, true, true);
+    setLocalConfigActiveState (ConfigId_glideSensitivity, true, true);
+    setLocalConfigActiveState (ConfigId_pressureSensitivity, true, true);
+    setLocalConfigActiveState (ConfigId_liftSensitivity, true, true);  
+
+    setLocalConfigItemRange (ConfigId_octave, -4, 6);
+    setLocalConfig (ConfigId_gammaCorrection, 1);
+    setLocalConfigActiveState (40, true, true);
+    
+    for (int i = 0; i < 2; ++i)
+    {
+        int start = i * 12;
+        
+        keyColours [start] = C;
+        keyColours [start + 1] = C_;
+        keyColours [start + 2] = D;
+        keyColours [start + 3] = D_;
+        keyColours [start + 4] = E;
+        keyColours [start + 5] = F;
+        keyColours [start + 6] = F_;
+        keyColours [start + 7] = G;
+        keyColours [start + 8] = G_;
+        keyColours [start + 9] = A;
+        keyColours [start + 10] = A_;
+        keyColours [start + 11] = B;
+    }
+    
+    for (int i=0; i < numKeys; i++)
+    {
+        keyChannel [i] = -1;
+        keyNoteNumber [i] = -1;
+    }
+}
+
+void repaint()
+{
+    for (int i = 0; i < numKeys; ++i)
+        fillPixel (getKeyColour (i), i, 0);
+}
+
+int getKeyColour (int index)
+{
+    int keyColour = keyColours [index];
+    
+    if (keyNoteNumber[index] >= 0)
+        return activeColour;
+    else
+        return keyColour;
+}
+
+
+void keyStrike (int keyIndex, int z, int velocity)
+{
+            
+    int noteNumber = getNoteForKey (keyIndex);
+    int channel = assignChannel (noteNumber);
+
+    sendNoteOn (channel, noteNumber, velocity);
+            
+    keyChannel[keyIndex] = channel;
+    keyNoteNumber[keyIndex] = noteNumber;
+}
+
+void keyPress (int keyIndex, int z, int velocity)
+{   
+    int channel = keyChannel[keyIndex];
+    int noteNumber = keyNoteNumber[keyIndex];
+
+    if (channel == -1 || noteNumber == -1)
+        return;
+
+    int pressure = clamp (0, 127, z);   
+    sendMIDI (0xd0 | channel, pressure);
+}
+
+void keyLift (int keyIndex, int z, int velocity)
+{   
+    int channel = keyChannel[keyIndex];
+    int noteNumber = keyNoteNumber[keyIndex];
+
+    sendNoteOff (channel, noteNumber, velocity);
+    deassignChannel (noteNumber, channel);
+
+    keyChannel[keyIndex] = -1;
+    keyNoteNumber[keyIndex] = -1;
+}
+
+void keyMove (int keyIndex, int x, int z)
+{
+    int channel = keyChannel[keyIndex];
+
+    if (channel == -1)
+        return;
+
+    if (getLocalConfig (ConfigId_mode0_pitchEnable) == 1)
+        sendPitchBend (channel, x);
+}
+        
+        
+int getKeyForNote (int noteIndex)
+{
+    return noteIndex - 48 - getTotalOctaveNoteShift();
+}
+
+int getNoteForKey (int keyIndex)
+{
+    return min (127, 48 + keyIndex + getTotalOctaveNoteShift());
+}
+
+int getTotalOctaveNoteShift()
+{
+    return getLocalConfig (ConfigId_octave) * 12;
+}
+ 
+void handleButtonDown (int index)
+{
+    if (index < numButtons)
+    {
+        bool isOtherButtonDown = isAnyButtonDown();
+        
+        buttonDown [index] = true;
+        
+        if (! isOtherButtonDown && index == 1 || index == 2)
+            handleOctaveButtonDown (index);
+    }
+}
+
+void handleButtonUp (int index)
+{
+    if (index < numButtons)
+    {
+        buttonDown [index] = false;
+    }
+}
+
+bool isAnyButtonDown()
+{
+    for (int i=0; i < numButtons; ++i)
+    {
+         if (buttonDown [i])
+            return true;
+    }
+    
+    return false;
+}
+
+void handleOctaveButtonDown (int index)
+{
+    int octave = getLocalConfig (ConfigId_octave);
+    
+    if      (index == 1) octave--;
+    else if (index == 2) octave++;
+    
+    setLocalConfig (ConfigId_octave, octave);
+}
