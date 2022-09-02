@@ -40,8 +40,12 @@ const int ConfigId_MPEZone             = 40;
 const int ConfigId_fixedVelocity       = 15;
 const int ConfigId_fixedVelocityValue  = 16;
 const int ConfigId_gammaCorrection     = 33;
-const int ConfigId_mode              = 20;
-const int ConfigId_mode0_pitchEnable = 102;
+const int ConfigId_mode                = 20;
+const int ConfigId_mode0_pitchEnable   = 102;
+const int ConfigId_mode0_pressEnable   = 103;
+const int ConfigId_xTrackingMode       = 30;
+const int ConfigId_zTrackingMode       = 32;
+
 
 const int numKeys = 24;
 int keyChannel[numKeys];
@@ -62,13 +66,19 @@ void initialise()
     setLocalConfigActiveState (ConfigId_midiChannelRange, true, true);
     setLocalConfigActiveState (ConfigId_MPEZone, true, true);
     setLocalConfigActiveState (ConfigId_velocitySensitivity, true, true);
-    setLocalConfigActiveState (ConfigId_glideSensitivity, true, true);
+    setLocalConfigActiveState (ConfigId_glideSensitivity, false, false);
     setLocalConfigActiveState (ConfigId_pressureSensitivity, true, true);
     setLocalConfigActiveState (ConfigId_liftSensitivity, true, true);  
+    setLocalConfigActiveState (ConfigId_mode0_pitchEnable, true, true);
+    setLocalConfigActiveState (ConfigId_mode0_pressEnable, true, true);
+    setLocalConfigActiveState (ConfigId_xTrackingMode, true, true);
+    setLocalConfigActiveState (ConfigId_zTrackingMode, true, true);    
 
+    
     setLocalConfigItemRange (ConfigId_octave, -4, 6);
     setLocalConfig (ConfigId_gammaCorrection, 1);
-    setLocalConfigActiveState (40, true, true);
+    setLocalConfig (ConfigId_mode, 0);
+    setLocalConfigActiveState (ConfigId_MPEZone, true, true);
     
     for (int i = 0; i < 2; ++i)
     {
