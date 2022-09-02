@@ -1,15 +1,14 @@
 
 /*
 <metadata description="LUMI script that allows configuration of custom key colors." 
-          details="Use BLOCKS Code to load script and configure color parameters. Reset LUMI back to factory settings in Dashboard to restore factory functionality." 
+          details="Drag and Drop onto LUMI using Dashboard or use BLOCKS Code to load script. Reset LUMI back to factory settings in Dashboard to restore factory functionality." 
           target="Lightkey" 
           tags="LUMI">
     <groups>
-      <group name="colours" displayName="Colors" />
+      <group name="colours" displayName="Colors" columnSpan="6" displayIndex="6010"/>
     </groups>
 
     <variables>
-      <variable name="activeColour" displayName="Active Note" group="colours" type="colour" value="0xffffff" />
       <variable name="C"  displayName="C" group="colours" type="colour" value="0xffe557da" />
       <variable name="C_"  displayName="C#" group="colours" type="colour" value="0xfff9a366" />
       <variable name="D"  displayName="D" group="colours" type="colour" value="0xff4dbdf8" />
@@ -22,6 +21,7 @@
       <variable name="A" displayName="A" group="colours" type="colour" value="0xfff9a366" />
       <variable name="A_" displayName="A#" group="colours" type="colour" value="0xffc38ff8" />
       <variable name="B" displayName="B" group="colours" type="colour" value="0xffc38ff8" />
+      <variable name="activeColour" displayName="Active Note" group="colours" type="colour" value="0xffffff" />
     </variables>
 </metadata>
 */
