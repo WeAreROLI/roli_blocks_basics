@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mode name="MPE">
+<mode name="MPE - default">
   <variable name="MIDI Mode" value="MPE"/>
   <variable name="MPEZone" value="Lower"/>
   <variable name="MPEChannelRange" value="15"/>
@@ -32,5 +32,4 @@
   <variable name="SlideCC" value="74"/>
   <variable name="SlideMode" value="Absolute"/>
   <variable name="FixedVelocity" value="false"/>
-  <variable name="SemitoneLegato" value="false"/>
 </mode>
