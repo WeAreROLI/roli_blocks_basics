@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mode name="Single Channel">
+<mode name="Single Channel - default">
   <variable name="MIDI Mode" value="Single Channel"/>
   <variable name="MIDIStartChannel" value="1"/>
   <variable name="MIDIEndChannel" value="1"/>
@@ -30,5 +30,4 @@
   <variable name="SlideCC" value="74"/>
   <variable name="SlideMode" value="Absolute"/>
   <variable name="FixedVelocity" value="false"/>
-  <variable name="SemitoneLegato" value="false"/>
 </mode>
