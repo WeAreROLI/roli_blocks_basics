@@ -32,4 +32,5 @@
   <variable name="SlideCC" value="74"/>
   <variable name="SlideMode" value="Absolute"/>
   <variable name="FixedVelocity" value="false"/>
+  <variable name="SemitoneLegato" value="true"/>
 </mode>
