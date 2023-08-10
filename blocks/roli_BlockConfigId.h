@@ -7,7 +7,7 @@
    purpose with or without fee is hereby granted, provided that the above
    copyright notice and this permission notice appear in all copies.
 
-   THE SOFTWARE IS PROVIDED “AS IS” AND ROLI LTD DISCLAIMS ALL WARRANTIES WITH
+   THE SOFTWARE IS PROVIDED ï¿½AS ISï¿½ AND ROLI LTD DISCLAIMS ALL WARRANTIES WITH
    REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
    AND FITNESS. IN NO EVENT SHALL ROLI LTD BE LIABLE FOR ANY SPECIAL, DIRECT,
    INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
@@ -132,6 +132,16 @@ enum BlockConfigId
     mode3_showScale     = 125,
     mode3_globalColour  = 126,
     mode3_rootColour    = 127,
+    // 5D Limit Config
+    velocityMin         = 130,
+    velocityMax         = 131,
+    pressMin            = 132,
+    pressMax            = 133,
+    liftMin             = 134,
+    liftMax             = 135,
+    // MIDI Port Config
+    midiPortForwarding  = 140,
+    midiPortThrottling  = 141,
     numConfigItems
 };
 } // namespace juce

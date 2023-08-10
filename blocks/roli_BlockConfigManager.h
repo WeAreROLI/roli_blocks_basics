@@ -67,7 +67,7 @@ struct BlockConfigManager
     void setDeviceIndex (TopologyIndex newDeviceIndex)                       { deviceIndex = newDeviceIndex; }
     void setDeviceComms (PhysicalTopologySource::DeviceConnection* newConn)  { deviceConnection = newConn; }
 
-    static constexpr juce::uint32 numConfigItems = 97;
+    static constexpr juce::uint32 numConfigItems = 105;
 
     static constexpr const char* midiSettingsGroup = "MIDI Settings";
     static constexpr const char* pitchGroup = "Pitch";
@@ -79,6 +79,7 @@ struct BlockConfigManager
     static constexpr const char* mode1Group = "Mode 2";
     static constexpr const char* mode2Group = "Mode 3";
     static constexpr const char* mode3Group = "Mode 4";
+    static constexpr const char* midiPortGroup = "MIDI Port";
 
     const ConfigDescription defaultConfig[numConfigItems] =
     {
@@ -105,6 +106,13 @@ struct BlockConfigManager
         { liftSensitivity,      100,    0,      127,        false,  "Lift Sensitivity",     ConfigType::integer,    {},               sensitivityGroup },
         { fixedVelocity,        0,      0,      1,          false,  "Fixed Velocity",       ConfigType::boolean,    {},               sensitivityGroup },
         { fixedVelocityValue,   127,    1,      127,        false,  "Fixed Velocity Value", ConfigType::integer,    {},               sensitivityGroup },
+        { velocityMin,          1,      1,      127,        false,  "Strike Minimum",       ConfigType::integer,    {},               sensitivityGroup },
+        { velocityMax,          127,    1,      127,        false,  "Strike Maximum",       ConfigType::integer,    {},               sensitivityGroup },
+        { pressMin,             0,      0,      127,        false,  "Press Minimum",        ConfigType::integer,    {},               sensitivityGroup },
+        { pressMax,             127,    0,      127,        false,  "Press Maximum",        ConfigType::integer,    {},               sensitivityGroup },
+        { liftMin,              0,      0,      127,        false,  "Lift Minimum",         ConfigType::integer,    {},               sensitivityGroup },
+        { liftMax,              127,    0,      127,        false,  "Lift Maximum",         ConfigType::integer,    {},               sensitivityGroup },
+
         { pianoMode,            0,      0,      1,          false,  "Piano Mode",           ConfigType::boolean,    {},               playGroup },
         { glideLock,            0,      0,      127,        false,  "Glide Rate",           ConfigType::integer,    {},               playGroup },
         { glideLockEnable,      0,      0,      1,          false,  "Glide Lock Enable",    ConfigType::boolean,    {},               playGroup },
@@ -212,7 +220,10 @@ struct BlockConfigManager
         { mode3_pressureEnable, 0,    0,      1,            false,  "Enable Pressure",      ConfigType::boolean,    {},               mode3Group },
         { mode3_showScale,      0,    0,      1,            false,  "Show Scales",          ConfigType::boolean,    {},               mode3Group },
         { mode3_globalColour, INT32_MIN, INT32_MIN, INT32_MAX, false,  "Global Key Color",  ConfigType::colour,     {},               mode3Group },
-        { mode3_rootColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color",    ConfigType::colour,     {},               mode3Group }
+        { mode3_rootColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color",    ConfigType::colour,     {},               mode3Group },
+        { midiPortForwarding,       0,    0,      1,        false,  "MIDI Port Forwarding", ConfigType::boolean,    {},          midiPortGroup },
+        { midiPortThrottling,       0,    0,      3,        false,  "MIDI Port Throttling", ConfigType::options,    { "Off", "Half", "Quarter", "Note On/Off" },          
+                                                                                                                                     midiPortGroup }
     };
 
     //==============================================================================
