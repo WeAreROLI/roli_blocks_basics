@@ -79,7 +79,6 @@ struct BlockConfigManager
     static constexpr const char* mode1Group = "Mode 2";
     static constexpr const char* mode2Group = "Mode 3";
     static constexpr const char* mode3Group = "Mode 4";
-    static constexpr const char* midiPortGroup = "MIDI Port";
 
     const ConfigDescription defaultConfig[numConfigItems] =
     {
@@ -221,9 +220,9 @@ struct BlockConfigManager
         { mode3_showScale,      0,    0,      1,            false,  "Show Scales",          ConfigType::boolean,    {},               mode3Group },
         { mode3_globalColour, INT32_MIN, INT32_MIN, INT32_MAX, false,  "Global Key Color",  ConfigType::colour,     {},               mode3Group },
         { mode3_rootColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color",    ConfigType::colour,     {},               mode3Group },
-        { midiPortForwarding,       0,    0,      1,        false,  "MIDI Port Forwarding", ConfigType::boolean,    {},          midiPortGroup },
+        { midiPortForwarding,       0,    0,      1,        false,  "MIDI Port Forwarding", ConfigType::boolean,    {},               midiSettingsGroup },
         { midiPortThrottling,       0,    0,      3,        false,  "MIDI Port Throttling", ConfigType::options,    { "Off", "Half", "Quarter", "Note On/Off" },          
-                                                                                                                                     midiPortGroup }
+                                                                                                                                      midiSettingsGroup }
     };
 
     //==============================================================================
