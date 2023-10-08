@@ -526,7 +526,7 @@ static constexpr const char* ledProgramLittleFootFunctions[] =
     "padControllerDrawPad/vi",
     "setUseDefaultKeyHandler/vb",
     "setUseDefaultKeyHandler/vbb",
-    "localHasMIDIPort/i",
+    "localHasMIDIOutPort/b",
 
     "setLED/viii",
     "blendLED/viii",
