@@ -129,6 +129,8 @@ struct ConnectedDeviceGroup  : private juce::AsyncUpdater,
 
         updateCurrentDeviceList();
         updateCurrentDeviceConnections();
+
+        numTopologyRequestsSent = 0;
     }
 
     void handleVersion (BlocksProtocol::DeviceVersion version)
