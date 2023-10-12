@@ -38,6 +38,7 @@ struct BlockDataSheet
         if (serialNumber.isTouchBlock())        initialiseForControlBlockTouch();
         if (serialNumber.isSeaboardBlock())     initialiseForSeaboardBlock();
         if (serialNumber.isLumiKeysBlock())     initialiseForLumiKeysBlock();
+        if (serialNumber.isStudioAirBlock())    initialiseForStudioAirBlock();
         if (serialNumber.isLightpadProBlock())  initialiseForLightpadProBlock();
     }
 
@@ -303,6 +304,18 @@ private:
                                "G#", "A", "A#", "B"}, keyBedGroup });
     }
 
+    void initialiseForStudioAirBlock()
+    {
+        apiType = Block::studioAirBlock;
+        
+        description = "Studio Air BLOCK (12x3)";
+        widthUnits  = 12;
+        heightUnits = 3;
+        
+        hasTouchSurface = false;
+        programAndHeapSize = 0;
+    }
+    
     //==============================================================================
     void addStatusLED (const char* name, float x, float y)
     {

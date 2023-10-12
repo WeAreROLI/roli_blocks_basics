@@ -183,7 +183,7 @@ struct BlockSerialNumber : public BlockStringData<16>
             if (c == 0)
                 return false;
 
-        return isAnyControlBlock() || isPadBlock() || isSeaboardBlock() || isLumiKeysBlock() || isLightpadProBlock();
+        return isAnyControlBlock() || isPadBlock() || isSeaboardBlock() || isLumiKeysBlock() || isLightpadProBlock() || isStudioAirBlock();
     }
 
     bool isPadBlock() const noexcept            { return hasPrefix ("LPB") || hasPrefix ("LPM"); }
@@ -194,6 +194,7 @@ struct BlockSerialNumber : public BlockStringData<16>
     bool isSeaboardBlock() const noexcept       { return hasPrefix ("SBB"); }
     bool isLumiKeysBlock() const noexcept       { return hasPrefix ("LKB"); }
     bool isLightpadProBlock() const noexcept    { return hasPrefix ("LPX"); }
+    bool isStudioAirBlock() const noexcept      { return hasPrefix ("SC2"); }
 
     bool isAnyControlBlock() const noexcept     { return isLiveBlock() || isLoopBlock() || isDevCtrlBlock() || isTouchBlock(); }
 
@@ -532,8 +533,6 @@ static constexpr const char* ledProgramLittleFootFunctions[] =
     "blendLED/viii",
     nullptr
 };
-
-JUCE_COMPILER_WARNING ("Remove before release! the old setLED and blendLED functions should be removed")
 
 } // namespace BlocksProtocol
 } // namespace roli

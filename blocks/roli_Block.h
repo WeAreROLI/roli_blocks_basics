@@ -46,7 +46,8 @@ public:
         touchBlock,            /**< Touch control block type.     */
         seaboardBlock,         /**< Seaboard block type.          */
         lumiKeysBlock,         /**< LUMI Keys block type          */
-        lightpadProBlock       /**< Lightpad Pro block type       */
+        lightpadProBlock,      /**< Lightpad Pro block type       */
+        studioAirBlock,        /**< Studio Air block type       */
     };
 
     /** Determines whether set program will be a temporary or default script saved to flash
