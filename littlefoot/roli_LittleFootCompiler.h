@@ -164,6 +164,7 @@ private:
     {
         CodeLocation (const juce::String& code, const juce::File& srcFile) noexcept : program (code), location (program.getCharPointer()), sourceFile (srcFile) {}
         CodeLocation (const CodeLocation& other) = default;
+        CodeLocation& operator= (const CodeLocation& other) = default;
 
         [[noreturn]] void throwError (const juce::String& message) const
         {
