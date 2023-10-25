@@ -958,7 +958,7 @@ private:
                     auto assignedValue = matchIf (Token::assign) ? parseExpression() : nullptr;
 
                     if (auto literal = dynamic_cast<LiteralValue*> (assignedValue))
-                        if (static_cast<double> (literal->value) == 0)
+                        if (juce::approximatelyEqual (static_cast<double> (literal->value), 0.0))
                             assignedValue = nullptr;
 
                     if (assignedValue != nullptr || ! blockBeingParsed->isMainBlockOfFunction) // no need to assign 0 for variables in the outer scope
@@ -1211,8 +1211,8 @@ private:
             {
                 const float v = value;
 
-                if (v == 0)  emit (OpCode::push0);
-                else         emit (OpCode::push32, Program::floatToInt (v));
+                if (juce::approximatelyEqual (v, 0.f))  emit (OpCode::push0);
+                else                                    emit (OpCode::push32, Program::floatToInt (v));
             }
             else
             {
@@ -2064,16 +2064,16 @@ private:
 
         ExpPtr simplifyFloat (double a, double b, LiteralValue* literal)
         {
-            if (operation == Token::plus)                 { literal->value = a + b;  return literal; }
-            if (operation == Token::minus)                { literal->value = a - b;  return literal; }
-            if (operation == Token::times)                { literal->value = a * b;  return literal; }
-            if (operation == Token::divide)               { literal->value = a / b;  return literal; }
-            if (operation == Token::equals)               { literal->value = a == b; return literal; }
-            if (operation == Token::notEquals)            { literal->value = a != b; return literal; }
-            if (operation == Token::lessThan)             { literal->value = a <  b; return literal; }
-            if (operation == Token::lessThanOrEqual)      { literal->value = a <= b; return literal; }
-            if (operation == Token::greaterThan)          { literal->value = a >  b; return literal; }
-            if (operation == Token::greaterThanOrEqual)   { literal->value = a >= b; return literal; }
+            if (operation == Token::plus)                 { literal->value = a + b;                               return literal; }
+            if (operation == Token::minus)                { literal->value = a - b;                               return literal; }
+            if (operation == Token::times)                { literal->value = a * b;                               return literal; }
+            if (operation == Token::divide)               { literal->value = a / b;                               return literal; }
+            if (operation == Token::equals)               { literal->value =   juce::approximatelyEqual (a, b);   return literal; }
+            if (operation == Token::notEquals)            { literal->value = ! juce::approximatelyEqual (a != b); return literal; }
+            if (operation == Token::lessThan)             { literal->value = a <  b;                              return literal; }
+            if (operation == Token::lessThanOrEqual)      { literal->value = a <= b;                              return literal; }
+            if (operation == Token::greaterThan)          { literal->value = a >  b;                              return literal; }
+            if (operation == Token::greaterThanOrEqual)   { literal->value = a >= b;                              return literal; }
             return this;
         }
 
