@@ -2065,16 +2065,16 @@ private:
 
         ExpPtr simplifyFloat (double a, double b, LiteralValue* literal)
         {
-            if (operation == Token::plus)                 { literal->value = a + b;                               return literal; }
-            if (operation == Token::minus)                { literal->value = a - b;                               return literal; }
-            if (operation == Token::times)                { literal->value = a * b;                               return literal; }
-            if (operation == Token::divide)               { literal->value = a / b;                               return literal; }
-            if (operation == Token::equals)               { literal->value =   juce::approximatelyEqual (a, b);   return literal; }
-            if (operation == Token::notEquals)            { literal->value = ! juce::approximatelyEqual (a != b); return literal; }
-            if (operation == Token::lessThan)             { literal->value = a <  b;                              return literal; }
-            if (operation == Token::lessThanOrEqual)      { literal->value = a <= b;                              return literal; }
-            if (operation == Token::greaterThan)          { literal->value = a >  b;                              return literal; }
-            if (operation == Token::greaterThanOrEqual)   { literal->value = a >= b;                              return literal; }
+            if (operation == Token::plus)                 { literal->value = a + b;                             return literal; }
+            if (operation == Token::minus)                { literal->value = a - b;                             return literal; }
+            if (operation == Token::times)                { literal->value = a * b;                             return literal; }
+            if (operation == Token::divide)               { literal->value = a / b;                             return literal; }
+            if (operation == Token::equals)               { literal->value =   juce::approximatelyEqual (a, b); return literal; }
+            if (operation == Token::notEquals)            { literal->value = ! juce::approximatelyEqual (a, b); return literal; }
+            if (operation == Token::lessThan)             { literal->value = a <  b;                            return literal; }
+            if (operation == Token::lessThanOrEqual)      { literal->value = a <= b;                            return literal; }
+            if (operation == Token::greaterThan)          { literal->value = a >  b;                            return literal; }
+            if (operation == Token::greaterThanOrEqual)   { literal->value = a >= b;                            return literal; }
             return this;
         }
 
