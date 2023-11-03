@@ -67,6 +67,12 @@ enum BlockConfigId
     globalKeyColour     = 34,
     rootKeyColour       = 35,
     brightness          = 36,
+    // Studio Air
+    hostAndLumiBattery  = 42,
+    smartCaseBattery    = 43,
+    smartCaseCharging   = 44,
+    sidePanelStatus     = 45,
+    jackAudioOutMode    = 46,
     // User
     user0               = 64,
     user1               = 65,

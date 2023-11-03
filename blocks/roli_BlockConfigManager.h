@@ -67,7 +67,7 @@ struct BlockConfigManager
     void setDeviceIndex (TopologyIndex newDeviceIndex)                       { deviceIndex = newDeviceIndex; }
     void setDeviceComms (PhysicalTopologySource::DeviceConnection* newConn)  { deviceConnection = newConn; }
 
-    static constexpr juce::uint32 numConfigItems = 106;
+    static constexpr juce::uint32 numConfigItems = 111;
 
     static constexpr const char* midiSettingsGroup = "MIDI Settings";
     static constexpr const char* pitchGroup = "Pitch";
@@ -147,6 +147,14 @@ struct BlockConfigManager
         { rootKeyColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color"  ,     ConfigType::colour,     {},             coloursGroup },
         { brightness,           100,    0,    100,          false,  "Brightness",           ConfigType::integer,    {},             coloursGroup },
 
+        { hostAndLumiBattery,   0,    0,    100,            false,  "Host and Lumi Battery",ConfigType::integer,    {},             midiSettingsGroup },
+        { smartCaseBattery,     0,    0,    100,            false,  "Smart Case Battery",   ConfigType::integer,    {},             midiSettingsGroup },
+        { smartCaseCharging,    0,    1,    1,              false,  "Smart Case Charging",  ConfigType::integer,    {},             midiSettingsGroup },
+        { sidePanelStatus,      0,    1,    1,              false,  "Side Panel Status",    ConfigType::integer,    {},             midiSettingsGroup },
+
+        { jackAudioOutMode,     0,    0,    1,              false,  "Audio Output Level",   ConfigType::options, { "Headphone",
+                                                                                                                    "Line out" },   midiSettingsGroup },
+        
         // These can be defined for unique usage for a given Littlefoot script
         { user0,                0,    0,      127,          false,  {},                     ConfigType::integer,    {},               {} },
         { user1,                0,    0,      127,          false,  {},                     ConfigType::integer,    {},               {} },
