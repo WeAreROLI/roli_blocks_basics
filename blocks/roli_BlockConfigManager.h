@@ -67,7 +67,7 @@ struct BlockConfigManager
     void setDeviceIndex (TopologyIndex newDeviceIndex)                       { deviceIndex = newDeviceIndex; }
     void setDeviceComms (PhysicalTopologySource::DeviceConnection* newConn)  { deviceConnection = newConn; }
 
-    static constexpr juce::uint32 numConfigItems = 105;
+    static constexpr juce::uint32 numConfigItems = 106;
 
     static constexpr const char* midiSettingsGroup = "MIDI Settings";
     static constexpr const char* pitchGroup = "Pitch";
@@ -220,10 +220,10 @@ struct BlockConfigManager
         { mode3_globalColour, INT32_MIN, INT32_MIN, INT32_MAX, false,  "Global Key Color",  ConfigType::colour,     {},               mode3Group },
         { mode3_rootColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color",    ConfigType::colour,     {},               mode3Group },
         { midiPortForwarding,       0,    0,      1,        false,  "MIDI Port Forwarding", ConfigType::boolean,    {},               midiSettingsGroup },
-        { midiPortThrottling,       0,    0,      3,        false,  "MIDI Port Throttling", ConfigType::options,    { "Off", 
-                                                                                                                      "Half", 
-                                                                                                                      "Quarter", 
-                                                                                                                      "Note On/Off" }, midiSettingsGroup }
+        { midiPortThrottling,       0,    0,      3,        false,  "MIDI Port Throttling", ConfigType::options,    { "Off", "Half", "Quarter", "Note On/Off" },        
+                                                                                                                                      midiSettingsGroup },
+        { modeButtonAction,         0,    0,      1,        false,  "Mode Button Action",   ConfigType::options,    { "Preset only", "Preset and MIDI Mode"},
+                                                                                                                                      playGroup }
     };
 
     //==============================================================================

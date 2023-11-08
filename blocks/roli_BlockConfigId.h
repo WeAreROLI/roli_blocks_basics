@@ -142,6 +142,8 @@ enum BlockConfigId
     // MIDI Port Config
     midiPortForwarding  = 56,
     midiPortThrottling  = 57,
+    // Shift Button Behaviour
+    modeButtonAction    = 58,
     numConfigItems
 };
 } // namespace juce
