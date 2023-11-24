@@ -75,6 +75,7 @@ struct BlockConfigManager
     static constexpr const char* sensitivityGroup = "Sensitivity";
     static constexpr const char* rhythmGroup = "Rhythm";
     static constexpr const char* coloursGroup = "Colors";
+    static constexpr const char* studioAirGroup = "Studio Air";
     static constexpr const char* mode0Group = "Mode 1";
     static constexpr const char* mode1Group = "Mode 2";
     static constexpr const char* mode2Group = "Mode 3";
@@ -147,10 +148,10 @@ struct BlockConfigManager
         { rootKeyColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color"  ,     ConfigType::colour,     {},             coloursGroup },
         { brightness,           100,    0,    100,          false,  "Brightness",           ConfigType::integer,    {},             coloursGroup },
 
-        { hostAndLumiBattery,   0,    0,    100,            false,  "Host and Lumi Battery",ConfigType::integer,    {},             midiSettingsGroup },
-        { smartCaseBattery,     0,    0,    100,            false,  "Smart Case Battery",   ConfigType::integer,    {},             midiSettingsGroup },
-        { smartCaseCharging,    0,    1,    1,              false,  "Smart Case Charging",  ConfigType::integer,    {},             midiSettingsGroup },
-        { sidePanelStatus,      0,    1,    1,              false,  "Side Panel Status",    ConfigType::integer,    {},             midiSettingsGroup },
+        { hostAndInstrumentBattery, 0,0,    100,            false,  "Host and Instrument Battery", ConfigType::integer,    {},      studioAirGroup },
+        { smartCaseBattery,     0,    0,    100,            false,  "Smart Case Battery",   ConfigType::integer,    {},             studioAirGroup },
+        { smartCaseCharging,    0,    1,    1,              false,  "Smart Case Charging",  ConfigType::integer,    {},             studioAirGroup },
+        { sidePanelStatus,      0,    1,    1,              false,  "Side Panel Status",    ConfigType::integer,    {},             studioAirGroup },
 
         { jackAudioOutMode,     0,    0,    1,              false,  "Audio Output Level",   ConfigType::options, { "Headphone",
                                                                                                                     "Line out" },   midiSettingsGroup },

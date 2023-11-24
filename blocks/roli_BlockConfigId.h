@@ -68,7 +68,7 @@ enum BlockConfigId
     rootKeyColour       = 35,
     brightness          = 36,
     // Studio Air
-    hostAndLumiBattery  = 42,
+    hostAndInstrumentBattery  = 42,
     smartCaseBattery    = 43,
     smartCaseCharging   = 44,
     sidePanelStatus     = 45,
