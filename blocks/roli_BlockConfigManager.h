@@ -231,7 +231,7 @@ struct BlockConfigManager
         { midiPortForwarding,       0,    0,      1,        false,  "MIDI Port Forwarding", ConfigType::boolean,    {},               midiSettingsGroup },
         { midiPortThrottling,       0,    0,      3,        false,  "MIDI Port Throttling", ConfigType::options,    { "Off", "Half", "Quarter", "Note On/Off" },        
                                                                                                                                       midiSettingsGroup },
-        { modeButtonAction,         0,    0,      1,        false,  "Mode Button Action",   ConfigType::options,    { "Preset only", "Preset and MIDI Mode"},
+        { modeButtonAction,         0,    0,      1,        false,  "Side-Button",          ConfigType::options,    { "Preset only", "Preset and MIDI Mode"},
                                                                                                                                       playGroup }
     };
 
