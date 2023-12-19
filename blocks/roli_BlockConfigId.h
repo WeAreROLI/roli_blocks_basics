@@ -73,6 +73,18 @@ enum BlockConfigId
     smartCaseCharging   = 44,
     sidePanelStatus     = 45,
     jackAudioOutMode    = 46,
+    // 5D Limit Config
+    velocityMin         = 50,
+    velocityMax         = 51,
+    pressMin            = 52,
+    pressMax            = 53,
+    liftMin             = 54,
+    liftMax             = 55,
+    // MIDI Port Config
+    midiPortForwarding  = 56,
+    midiPortThrottling  = 57,
+    // Shift Button Behaviour
+    modeButtonAction    = 58,
     // User
     user0               = 64,
     user1               = 65,
@@ -138,18 +150,6 @@ enum BlockConfigId
     mode3_showScale     = 125,
     mode3_globalColour  = 126,
     mode3_rootColour    = 127,
-    // 5D Limit Config
-    velocityMin         = 50,
-    velocityMax         = 51,
-    pressMin            = 52,
-    pressMax            = 53,
-    liftMin             = 54,
-    liftMax             = 55,
-    // MIDI Port Config
-    midiPortForwarding  = 56,
-    midiPortThrottling  = 57,
-    // Shift Button Behaviour
-    modeButtonAction    = 58,
     numConfigItems
 };
 } // namespace juce
