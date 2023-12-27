@@ -183,7 +183,7 @@ struct BlockSerialNumber : public BlockStringData<16>
             if (c == 0)
                 return false;
 
-        return isAnyControlBlock() || isPadBlock() || isSeaboardBlock() || isLumiKeysBlock() || isLightpadProBlock() || isStudioAirBlock();
+        return isAnyControlBlock() || isPadBlock() || isSeaboardBlock() || isLumiKeysBlock() || isLightpadProBlock() || isLumiKeys48Block() || isStudioAirBlock();
     }
 
     bool isPadBlock() const noexcept            { return hasPrefix ("LPB") || hasPrefix ("LPM"); }
@@ -193,6 +193,7 @@ struct BlockSerialNumber : public BlockStringData<16>
     bool isTouchBlock() const noexcept          { return hasPrefix ("TCB"); }
     bool isSeaboardBlock() const noexcept       { return hasPrefix ("SBB"); }
     bool isLumiKeysBlock() const noexcept       { return hasPrefix ("LKB"); }
+    bool isLumiKeys48Block() const noexcept     { return hasPrefix ("LK4"); }
     bool isLightpadProBlock() const noexcept    { return hasPrefix ("LPX"); }
     bool isStudioAirBlock() const noexcept      { return hasPrefix ("SC2"); }
 
