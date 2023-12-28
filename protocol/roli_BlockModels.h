@@ -249,7 +249,6 @@ private:
 
     void initialiseForLumiKeysBlock(int numUnits)
     {
-        
         apiType = numUnits == 1 ? Block::Type::lumiKeysBlock : Block::Type::lumiKeys48Block;
         description = numUnits == 1 ? "LUMI Keys BLOCK (6x3)" : "LUMI Keys BLOCK (12x3)";
         
