@@ -73,6 +73,7 @@ enum BlockConfigId
     smartCaseCharging   = 44,
     sidePanelStatus     = 45,
     jackAudioOutMode    = 46,
+    pedalCC             = 47,
     // 5D Limit Config
     velocityMin         = 50,
     velocityMax         = 51,

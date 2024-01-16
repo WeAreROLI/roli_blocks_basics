@@ -67,7 +67,7 @@ struct BlockConfigManager
     void setDeviceIndex (TopologyIndex newDeviceIndex)                       { deviceIndex = newDeviceIndex; }
     void setDeviceComms (PhysicalTopologySource::DeviceConnection* newConn)  { deviceConnection = newConn; }
 
-    static constexpr juce::uint32 numConfigItems = 111;
+    static constexpr juce::uint32 numConfigItems = 112;
 
     static constexpr const char* midiSettingsGroup = "MIDI Settings";
     static constexpr const char* pitchGroup = "Pitch";
@@ -155,6 +155,7 @@ struct BlockConfigManager
 
         { jackAudioOutMode,     0,    0,    1,              false,  "Audio Output Level",   ConfigType::options, { "Headphone",
                                                                                                                     "Line out" },   midiSettingsGroup },
+        { pedalCC,              64,    0,    127,           false,  "Pedal Control Change", ConfigType::integer,    {},             midiSettingsGroup },
         
         // These can be defined for unique usage for a given Littlefoot script
         { user0,                0,    0,      127,          false,  {},                     ConfigType::integer,    {},               {} },
