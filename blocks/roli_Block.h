@@ -48,7 +48,7 @@ public:
         lumiKeysBlock,         /**< LUMI Keys block type          */
         lightpadProBlock,      /**< Lightpad Pro block type       */
         studioAirBlock,        /**< Studio Air block type       */
-        lumiKeys48Block        /**< LUMI Keys 48 block type       */
+        lumiKeys49Block        /**< LUMI Keys 49 block type       */
     };
 
     /** Determines whether set program will be a temporary or default script saved to flash
