@@ -37,8 +37,8 @@ struct BlockDataSheet
         if (serialNumber.isDevCtrlBlock())      initialiseForControlBlockDeveloper();
         if (serialNumber.isTouchBlock())        initialiseForControlBlockTouch();
         if (serialNumber.isSeaboardBlock())     initialiseForSeaboardBlock();
-        if (serialNumber.isLumiKeysBlock())     initialiseForLumiKeysBlock(true);
-        if (serialNumber.isLumiKeys49Block())   initialiseForLumiKeysBlock(false);
+        if (serialNumber.isLumiKeysBlock())     initialiseForLumiKeysBlock (Block::Type::lumiKeysBlock);
+        if (serialNumber.isLumiKeys49Block())   initialiseForLumiKeysBlock (Block::Type::lumiKeys49Block);
         if (serialNumber.isStudioAirBlock())    initialiseForStudioAirBlock();
         if (serialNumber.isLightpadProBlock())  initialiseForLightpadProBlock();
     }
@@ -247,15 +247,13 @@ private:
         addModeButton();
     }
 
-    void initialiseForLumiKeysBlock(bool is24KeyLumi)
+    void initialiseForLumiKeysBlock (Block::Type blockType)
     {
-        apiType = is24KeyLumi ? Block::Type::lumiKeysBlock : Block::Type::lumiKeys49Block;
-        description = is24KeyLumi ? "LUMI Keys BLOCK (6x3)" : "LUMI Keys BLOCK (12x3)";
-        
-        numKeywaves = is24KeyLumi ? 24 : 49;
-        widthUnits = is24KeyLumi ? 6 : 12;
-        heightUnits = 3;
-        
+        apiType = blockType;
+        description = blockType == Block::Type::lumiKeysBlock ? "LUMI Keys BLOCK (6x3)" : "LUMI Keys BLOCK (14x4)";
+        numKeywaves = blockType == Block::Type::lumiKeysBlock ? 24 : 49;
+        widthUnits  = blockType == Block::Type::lumiKeysBlock ? 6 : 14;
+        heightUnits = blockType == Block::Type::lumiKeysBlock ? 3 : 4;
         lightGridWidth = 0;
         lightGridHeight = 0;
 
