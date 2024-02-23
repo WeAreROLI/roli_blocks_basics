@@ -96,13 +96,27 @@ public:
 
     void updateDeviceInfo (const DeviceInfo& deviceInfo)
     {
-        versionNumber = deviceInfo.version.asString();
+        static constexpr auto seaboardBlockMVersionPrefix = "M";
+        const auto rawVersion = deviceInfo.version.asString();
+
+        versionNumber = rawVersion.trimCharactersAtStart (seaboardBlockMVersionPrefix);
         name = deviceInfo.name.asString();
         isMaster = deviceInfo.isMaster;
         masterUID = deviceInfo.masterUid;
         batteryCharging = deviceInfo.batteryCharging;
         batteryLevel = deviceInfo.batteryLevel;
         topologyIndex = deviceInfo.index;
+
+        modelVariant = [&]
+        {
+            if (getType() == Type::seaboardBlock
+                && rawVersion.startsWith (seaboardBlockMVersionPrefix))
+            {
+                return "M";
+            }
+
+            return "";
+        }();
     }
 
     void setToMaster (bool shouldBeMaster)

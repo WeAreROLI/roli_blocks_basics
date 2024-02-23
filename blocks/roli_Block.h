@@ -70,6 +70,9 @@ public:
     /** The Block's version number */
     juce::String versionNumber;
 
+    /** The Block's model variant */
+    juce::String modelVariant;
+
     /** The Block's name */
     juce::String name;
 
