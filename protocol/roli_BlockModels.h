@@ -38,7 +38,7 @@ struct BlockDataSheet
         if (serialNumber.isTouchBlock())        initialiseForControlBlockTouch();
         if (serialNumber.isSeaboardBlock())     initialiseForSeaboardBlock();
         if (serialNumber.isLumiKeysBlock())     initialiseForLumiKeysBlock (Block::Type::lumiKeysBlock);
-        if (serialNumber.isLumiKeys49Block())   initialiseForLumiKeysBlock (Block::Type::lumiKeys49Block);
+        if (serialNumber.isRoliPiano49())       initialiseForLumiKeysBlock (Block::Type::roliPiano49);
         if (serialNumber.isStudioAirBlock())    initialiseForStudioAirBlock();
         if (serialNumber.isLightpadProBlock())  initialiseForLightpadProBlock();
     }
