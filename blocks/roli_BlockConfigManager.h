@@ -75,7 +75,7 @@ struct BlockConfigManager
     static constexpr const char* sensitivityGroup = "Sensitivity";
     static constexpr const char* rhythmGroup = "Rhythm";
     static constexpr const char* coloursGroup = "Colors";
-    static constexpr const char* studioAirGroup = "Studio Air";
+    static constexpr const char* studioAirGroup = "Airwave";
     static constexpr const char* mode0Group = "Mode 1";
     static constexpr const char* mode1Group = "Mode 2";
     static constexpr const char* mode2Group = "Mode 3";

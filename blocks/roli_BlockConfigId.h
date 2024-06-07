@@ -67,7 +67,7 @@ enum BlockConfigId
     globalKeyColour     = 34,
     rootKeyColour       = 35,
     brightness          = 36,
-    // Studio Air
+    // Airwave
     hostAndInstrumentBattery  = 42,
     smartCaseBattery    = 43,
     smartCaseCharging   = 44,

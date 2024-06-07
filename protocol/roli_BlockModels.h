@@ -39,7 +39,7 @@ struct BlockDataSheet
         if (serialNumber.isSeaboardBlock())     initialiseForSeaboardBlock();
         if (serialNumber.isLumiKeysBlock())     initialiseForLumiKeysBlock (Block::Type::lumiKeysBlock);
         if (serialNumber.isRoliPiano49())       initialiseForLumiKeysBlock (Block::Type::roliPiano49);
-        if (serialNumber.isStudioAirBlock())    initialiseForStudioAirBlock();
+        if (serialNumber.isAirwave())           initialiseForAirwave();
         if (serialNumber.isLightpadProBlock())  initialiseForLightpadProBlock();
     }
 
@@ -302,11 +302,11 @@ private:
                                "G#", "A", "A#", "B"}, keyBedGroup });
     }
 
-    void initialiseForStudioAirBlock()
+    void initialiseForAirwave()
     {
-        apiType = Block::studioAirBlock;
+        apiType = Block::airwave;
         
-        description = "Studio Air BLOCK (12x3)";
+        description = "Airwave (12x3)";
         widthUnits  = 12;
         heightUnits = 3;
         

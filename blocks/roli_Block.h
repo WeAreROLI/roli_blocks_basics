@@ -47,8 +47,8 @@ public:
         seaboardBlock,         /**< Seaboard block type.          */
         lumiKeysBlock,         /**< LUMI Keys block type          */
         lightpadProBlock,      /**< Lightpad Pro block type       */
-        studioAirBlock,        /**< Studio Air block type       */
-        roliPiano49            /**< ROLI Piano 49 type       */
+        airwave,               /**< Airwave type                  */
+        roliPiano49            /**< ROLI Piano 49 type            */
     };
 
     /** Determines whether set program will be a temporary or default script saved to flash
