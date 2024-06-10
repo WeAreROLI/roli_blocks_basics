@@ -75,7 +75,7 @@ struct BlockConfigManager
     static constexpr const char* sensitivityGroup = "Sensitivity";
     static constexpr const char* rhythmGroup = "Rhythm";
     static constexpr const char* coloursGroup = "Colors";
-    static constexpr const char* studioAirGroup = "Airwave";
+    static constexpr const char* airwaveGroup = "Airwave";
     static constexpr const char* mode0Group = "Mode 1";
     static constexpr const char* mode1Group = "Mode 2";
     static constexpr const char* mode2Group = "Mode 3";
@@ -148,10 +148,10 @@ struct BlockConfigManager
         { rootKeyColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color"  ,     ConfigType::colour,     {},             coloursGroup },
         { brightness,           100,    0,    100,          false,  "Brightness",           ConfigType::integer,    {},             coloursGroup },
 
-        { hostAndInstrumentBattery, 0,0,    100,            false,  "Host and Instrument Battery", ConfigType::integer,    {},      studioAirGroup },
-        { smartCaseBattery,     0,    0,    100,            false,  "Smart Case Battery",   ConfigType::integer,    {},             studioAirGroup },
-        { smartCaseCharging,    0,    1,    1,              false,  "Smart Case Charging",  ConfigType::integer,    {},             studioAirGroup },
-        { sidePanelStatus,      0,    1,    1,              false,  "Side Panel Status",    ConfigType::integer,    {},             studioAirGroup },
+        { hostAndInstrumentBattery, 0,0,    100,            false,  "Host and Instrument Battery", ConfigType::integer,    {},      airwaveGroup },
+        { smartCaseBattery,     0,    0,    100,            false,  "Smart Case Battery",   ConfigType::integer,    {},             airwaveGroup },
+        { smartCaseCharging,    0,    1,    1,              false,  "Smart Case Charging",  ConfigType::integer,    {},             airwaveGroup },
+        { sidePanelStatus,      0,    1,    1,              false,  "Side Panel Status",    ConfigType::integer,    {},             airwaveGroup },
 
         { jackAudioOutMode,     0,    0,    1,              false,  "Audio Output Level",   ConfigType::options, { "Headphone",
                                                                                                                     "Line out" },   midiSettingsGroup },
