@@ -149,8 +149,8 @@ struct BlockConfigManager
         { brightness,           100,    0,    100,          false,  "Brightness",           ConfigType::integer,    {},             coloursGroup },
 
         { hostAndInstrumentBattery, 0,0,    100,            false,  "Host and Instrument Battery", ConfigType::integer,    {},      airwaveGroup },
-        { smartCaseBattery,     0,    0,    100,            false,  "Smart Case Battery",   ConfigType::integer,    {},             airwaveGroup },
-        { smartCaseCharging,    0,    1,    1,              false,  "Smart Case Charging",  ConfigType::integer,    {},             airwaveGroup },
+        { airwaveBattery,     0,    0,    100,            false,  "Smart Case Battery",   ConfigType::integer,    {},             airwaveGroup },
+        { airwaveCharging,    0,    1,    1,              false,  "Smart Case Charging",  ConfigType::integer,    {},             airwaveGroup },
         { sidePanelStatus,      0,    1,    1,              false,  "Side Panel Status",    ConfigType::integer,    {},             airwaveGroup },
 
         { jackAudioOutMode,     0,    0,    1,              false,  "Audio Output Level",   ConfigType::options, { "Headphone",

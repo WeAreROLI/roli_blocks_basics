@@ -69,8 +69,8 @@ enum BlockConfigId
     brightness          = 36,
     // Airwave
     hostAndInstrumentBattery  = 42,
-    smartCaseBattery    = 43,
-    smartCaseCharging   = 44,
+    airwaveBattery    = 43,
+    airwaveCharging   = 44,
     sidePanelStatus     = 45,
     jackAudioOutMode    = 46,
     pedalCC             = 47,
