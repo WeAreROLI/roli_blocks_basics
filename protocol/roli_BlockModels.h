@@ -37,8 +37,8 @@ struct BlockDataSheet
         if (serialNumber.isDevCtrlBlock())      initialiseForControlBlockDeveloper();
         if (serialNumber.isTouchBlock())        initialiseForControlBlockTouch();
         if (serialNumber.isSeaboardBlock())     initialiseForSeaboardBlock();
-        if (serialNumber.isLumiKeysBlock())     initialiseForLumiKeysBlock (Block::Type::lumiKeysBlock);
-        if (serialNumber.isRoliPiano49())       initialiseForLumiKeysBlock (Block::Type::roliPiano49);
+        if (serialNumber.isLumiKeysBlock())     initialiseForLumiOrRoliPiano (Block::Type::lumiKeysBlock);
+        if (serialNumber.isRoliPiano49())       initialiseForLumiOrRoliPiano (Block::Type::roliPiano49);
         if (serialNumber.isAirwave())           initialiseForAirwave();
         if (serialNumber.isLightpadProBlock())  initialiseForLightpadProBlock();
     }
@@ -247,10 +247,10 @@ private:
         addModeButton();
     }
 
-    void initialiseForLumiKeysBlock (Block::Type blockType)
+    void initialiseForLumiOrRoliPiano (Block::Type blockType)
     {
         apiType = blockType;
-        description = blockType == Block::Type::lumiKeysBlock ? "LUMI Keys BLOCK (6x3)" : "LUMI Keys BLOCK (14x4)";
+        description = blockType == Block::Type::lumiKeysBlock ? "LUMI Keys BLOCK (6x3)" : "ROLI Piano 49 (14x4)";
         numKeywaves = blockType == Block::Type::lumiKeysBlock ? 24 : 49;
         widthUnits  = blockType == Block::Type::lumiKeysBlock ? 6 : 14;
         heightUnits = blockType == Block::Type::lumiKeysBlock ? 3 : 4;
@@ -306,8 +306,8 @@ private:
     {
         apiType = Block::airwave;
         
-        description = "Airwave (12x3)";
-        widthUnits  = 12;
+        description = "Airwave";
+        widthUnits  = 1;
         heightUnits = 3;
         
         hasTouchSurface = false;

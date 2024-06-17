@@ -74,7 +74,7 @@ struct MIDIDeviceDetector  : public PhysicalTopologySource::DeviceDetector
 
     static bool isBlocksMidiDeviceName (const juce::String& name)
     {
-        return name.indexOf (" BLOCK") > 0 || name.indexOf (" Block") > 0 || name.indexOf("ROLI Piano") >= 0 || name.indexOf("Airwave") >= 0;
+        return name.indexOf (" BLOCK") > 0 || name.indexOf (" Block") > 0 || name.contains ("ROLI Piano") || name.contains("Airwave");
     }
 
     static juce::String cleanBlocksDeviceName (juce::String name)
