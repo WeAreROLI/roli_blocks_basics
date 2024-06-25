@@ -35,8 +35,8 @@ namespace
 //==============================================================================
 const juce::RelativeTime TopologyMonitor::defaultWaitTime = juce::RelativeTime::seconds (5.0);
 
-TopologyMonitor::TopologyMonitor (TopologySource& topologySource)
-    : topologySource (topologySource)
+TopologyMonitor::TopologyMonitor (TopologySource& topologySourceIn)
+    : topologySource (topologySourceIn)
 {
 }
 

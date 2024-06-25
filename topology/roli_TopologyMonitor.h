@@ -19,7 +19,6 @@ public:
 
     //==============================================================================
     TopologyMonitor (TopologySource& topologySource);
-    virtual ~TopologyMonitor() {}
 
     //==============================================================================
     void waitFor (ConditionFunc,
