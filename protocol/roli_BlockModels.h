@@ -37,8 +37,8 @@ struct BlockDataSheet
         if (serialNumber.isDevCtrlBlock())      initialiseForControlBlockDeveloper();
         if (serialNumber.isTouchBlock())        initialiseForControlBlockTouch();
         if (serialNumber.isSeaboardBlock())     initialiseForSeaboardBlock();
-        if (serialNumber.isLumiKeysBlock())     initialiseForLumiOrRoliPiano (Block::Type::lumiKeysBlock);
-        if (serialNumber.isRoliPiano49())       initialiseForLumiOrRoliPiano (Block::Type::roliPiano49);
+        if (serialNumber.isLumiKeysBlock())     initialiseForRoliPiano (Block::Type::lumiKeysBlock);
+        if (serialNumber.isRoliPiano49())       initialiseForRoliPiano (Block::Type::roliPiano49);
         if (serialNumber.isAirwave())           initialiseForAirwave();
         if (serialNumber.isLightpadProBlock())  initialiseForLightpadProBlock();
     }
@@ -247,10 +247,10 @@ private:
         addModeButton();
     }
 
-    void initialiseForLumiOrRoliPiano (Block::Type blockType)
+    void initialiseForRoliPiano (Block::Type blockType)
     {
         apiType = blockType;
-        description = blockType == Block::Type::lumiKeysBlock ? "LUMI Keys BLOCK (6x3)" : "ROLI Piano 49 (14x4)";
+        description = blockType == Block::Type::lumiKeysBlock ? "ROLI Piano M (6x3)" : "ROLI Piano 49 (14x4)";
         numKeywaves = blockType == Block::Type::lumiKeysBlock ? 24 : 49;
         widthUnits  = blockType == Block::Type::lumiKeysBlock ? 6 : 14;
         heightUnits = blockType == Block::Type::lumiKeysBlock ? 3 : 4;
@@ -261,9 +261,12 @@ private:
                     ControlButton::ButtonFunction::down, 0.6f, 0.2f,
                     ControlButton::ButtonFunction::up, 1.0f, 0.2f);
 
-        addPortsSW (Block::ConnectionPort::DeviceEdge::west, 2);
-        addPortsNE (Block::ConnectionPort::DeviceEdge::north, 4);
-        addPortsNE (Block::ConnectionPort::DeviceEdge::east, 2);
+        if (blockType == Block::Type::lumiKeysBlock)
+        {
+            addPortsSW (Block::ConnectionPort::DeviceEdge::west, 2);
+            addPortsNE (Block::ConnectionPort::DeviceEdge::north, 4);
+            addPortsNE (Block::ConnectionPort::DeviceEdge::east, 2);
+        }
 
         hasTouchSurface = true;
         programAndHeapSize = BlocksProtocol::padBlockProgramAndHeapSize;
