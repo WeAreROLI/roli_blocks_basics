@@ -38,5 +38,6 @@ namespace roli
 #include "topology/roli_BlockGraph.cpp"
 #include "topology/roli_PhysicalTopologySource.cpp"
 #include "topology/roli_RuleBasedTopologySource.cpp"
+#include "topology/roli_TopologyMonitor.cpp"
 #include "visualisers/roli_DrumPadLEDProgram.cpp"
 #include "visualisers/roli_BitmapLEDProgram.cpp"

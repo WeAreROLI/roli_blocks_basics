@@ -72,11 +72,6 @@ struct MIDIDeviceDetector  : public PhysicalTopologySource::DeviceDetector
         return lockedFromOutside && ! findDevices().isEmpty();
     }
 
-    static bool isBlocksMidiDeviceName (const juce::String& name)
-    {
-        return name.indexOf (" BLOCK") > 0 || name.indexOf (" Block") > 0 || name.contains ("ROLI Piano") || name.contains("Airwave");
-    }
-
     static juce::String cleanBlocksDeviceName (juce::String name)
     {
         name = name.trim();
@@ -108,7 +103,7 @@ struct MIDIDeviceDetector  : public PhysicalTopologySource::DeviceDetector
 
         for (const auto& input : midiInputs)
         {
-            if (isBlocksMidiDeviceName (input.name))
+            if (BlockNameController::isBlocksMidiDeviceName (input.name))
             {
                 MidiInputOutputPair pair;
                 pair.input = input;
