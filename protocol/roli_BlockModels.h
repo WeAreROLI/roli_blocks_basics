@@ -306,7 +306,7 @@ private:
     {
         apiType = Block::airwave;
         
-        description = "Airwave";
+        description = "ROLI Airwave";
         widthUnits  = 1;
         heightUnits = 3;
         
