@@ -112,7 +112,7 @@ struct BlockNameController
             case Block::Type::loopBlock:             return loopName;
             case Block::Type::touchBlock:            return touchName;
             case Block::Type::developerControlBlock: return devConName;
-            case Block::Type::lumiKeysBlock:         return roliPianoName;
+            case Block::Type::lumiKeysBlock:         return roliPianoMName;
             case Block::Type::roliPiano49:           return roliPiano49Name;
             case Block::Type::airwave:               return airwaveName;
           #ifndef IGNORE_NEW_BLOCKS
@@ -148,7 +148,7 @@ struct BlockNameController
         if (value.containsIgnoreCase (roliPiano49Name))
             return Block::Type::roliPiano49;
 
-        if (value.containsIgnoreCase (roliPianoName))
+        if (value.containsIgnoreCase (lumiKeysName) || value.containsIgnoreCase (roliPianoMName))
             return Block::Type::lumiKeysBlock;
 
         if (value.containsIgnoreCase (airwaveName))
@@ -158,6 +158,17 @@ struct BlockNameController
             return Block::Type::lightpadProBlock;
       #endif
         return Block::Type::unknown;
+    }
+
+    /**
+      * Get original Block type as a string
+      */
+    static juce::String getLegacyBlockTypeAsString (const Block::Type type)
+    {
+        if (type == Block::Type::lumiKeysBlock)
+            return lumiKeysName;
+
+        return getBlockTypeAsString (type);
     }
 
     /**
@@ -247,8 +258,8 @@ struct BlockNameController
 
     static juce::String getDefaultNameSuffix (Block::Type type)
     {
-        if (type == Block::Type::airwave) return " Airwave";
-        if (type == Block::Type::roliPiano49) return " ROLI Piano 49";
+        if (type == Block::Type::airwave) return " ROLI Airwave";
+        if (type == Block::Type::roliPiano49) return " ROLI Piano";
         return " Block";
     }
 
@@ -315,8 +326,9 @@ struct BlockNameController
 private:
     static constexpr const char* lightpadName = "Lightpad";
     static constexpr const char* seaboardName = "Seaboard";
-    static constexpr const char* roliPianoName = "ROLI Piano M";
-    static constexpr const char* roliPiano49Name = "ROLI Piano 49";
+    static constexpr const char* lumiKeysName = "LUMI Keys";
+    static constexpr const char* roliPianoMName = "ROLI Piano M";
+    static constexpr const char* roliPiano49Name = "ROLI Piano";
     static constexpr const char* airwaveName = "ROLI Airwave";
     static constexpr const char* lightpadProName = "Lightpad Pro";
     static constexpr const char* liveName = "Live";

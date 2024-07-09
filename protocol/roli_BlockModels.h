@@ -250,7 +250,7 @@ private:
     void initialiseForRoliPiano (Block::Type blockType)
     {
         apiType = blockType;
-        description = blockType == Block::Type::lumiKeysBlock ? "ROLI Piano M (6x3)" : "ROLI Piano 49 (14x4)";
+        description = blockType == Block::Type::lumiKeysBlock ? "ROLI Piano M (6x3)" : "ROLI Piano (14x4)";
         numKeywaves = blockType == Block::Type::lumiKeysBlock ? 24 : 49;
         widthUnits  = blockType == Block::Type::lumiKeysBlock ? 6 : 14;
         heightUnits = blockType == Block::Type::lumiKeysBlock ? 3 : 4;
