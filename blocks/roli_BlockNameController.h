@@ -50,7 +50,7 @@ struct BlockNameController
     static bool isBlocksMidiDeviceName (const juce::String& name)
     {
         return name.indexOf (" BLOCK") > 0 || name.indexOf (" Block") > 0 
-            || name.containsIgnoreCase ("roli piano") || name.containsIgnoreCase ("airwave");
+            || name.containsIgnoreCase ("roli piano") || name.containsIgnoreCase ("airwave pedal");
     }
 
     /**
