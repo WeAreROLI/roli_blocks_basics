@@ -51,6 +51,14 @@ public:
         roliPiano49            /**< ROLI Piano 49 type            */
     };
 
+
+    enum BatteryStatus
+    {
+        low,
+        medium,
+        high
+    };
+
     /** Determines whether set program will be a temporary or default script saved to flash
     */
     enum class ProgramPersistency { setAsTemp, setAsDefault };
@@ -113,6 +121,16 @@ public:
 
     /** Returns true if the battery is charging. */
     virtual bool isBatteryCharging() const = 0;
+
+    static inline BatteryStatus getBatteryStatus (float batteryLevel)
+    {
+        if (batteryLevel < 0.2f)
+            return BatteryStatus::low;
+        else if (batteryLevel < 0.88f)
+            return BatteryStatus::medium;
+
+        return BatteryStatus::high;
+    }
 
     //==============================================================================
     /** Returns true if this block is connected and active. */
