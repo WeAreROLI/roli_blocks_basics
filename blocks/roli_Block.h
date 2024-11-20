@@ -93,6 +93,9 @@ public:
     */
     const UID uid;
 
+    /** Whether device has a battery */
+    bool hasBattery { true };
+
     ProgramPersistency programPersistency { ProgramPersistency::setAsTemp };
 
     //==============================================================================

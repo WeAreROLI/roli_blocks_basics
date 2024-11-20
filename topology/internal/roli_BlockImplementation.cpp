@@ -57,6 +57,8 @@ public:
         for (auto&& s : modelData.statusLEDs)
             statusLights.add (new StatusLightImplementation (*this, s));
 
+        hasBattery = modelData.hasBattery;
+
         updateMidiConnectionListener();
     }
 

@@ -58,6 +58,8 @@ struct BlockDataSheet
     int lightGridWidth = 0, lightGridHeight = 0, lightGridStartIndex = 0;
 
     bool hasTouchSurface = false;
+    bool hasBattery = true;
+
     int numKeywaves = 0;
 
     int numLEDRowLEDs = 0;
@@ -314,6 +316,7 @@ private:
         heightUnits = 3;
         
         hasTouchSurface = false;
+        hasBattery = false;
         programAndHeapSize = 0;
     }
     
