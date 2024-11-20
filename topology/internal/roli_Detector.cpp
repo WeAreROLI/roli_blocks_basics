@@ -671,7 +671,7 @@ private:
 
     //==============================================================================
    #if DUMP_TOPOLOGY
-    static String idToSerialNum (const BlockTopology& topology, Block::UID uid)
+    static juce::String idToSerialNum (const BlockTopology& topology, Block::UID uid)
     {
         for (auto* b : topology.blocks)
             if (b->uid == uid)
@@ -680,7 +680,7 @@ private:
         return "???";
     }
 
-    static String portEdgeToString (Block::ConnectionPort port)
+    static juce::String portEdgeToString (Block::ConnectionPort port)
     {
         switch (port.edge)
         {
@@ -694,37 +694,37 @@ private:
         return {};
     }
 
-    static String portToString (Block::ConnectionPort port)
+    static juce::String portToString (Block::ConnectionPort port)
     {
-        return portEdgeToString (port) + "_" + String (port.index);
+        return portEdgeToString (port) + "_" + juce::String (port.index);
     }
 
     static void dumpTopology (const BlockTopology& topology)
     {
-        MemoryOutputStream m;
+        juce::MemoryOutputStream m;
 
-        m << "=============================================================================" << newLine
-        << "Topology:  " << topology.blocks.size() << " device(s)" << newLine
-        << newLine;
+        m << "=============================================================================" << juce::newLine
+        << "Topology:  " << topology.blocks.size() << " device(s)" << juce::newLine
+        << juce::newLine;
 
         int index = 0;
 
         for (auto block : topology.blocks)
         {
-            m << "Device " << index++ << (block->isMasterBlock() ? ":  (MASTER)" : ":") << newLine;
+            m << "Device " << index++ << (block->isMasterBlock() ? ":  (MASTER)" : ":") << juce::newLine;
 
-            m << "  Description: " << block->getDeviceDescription() << newLine
-            << "  Serial: " << block->serialNumber << newLine;
+            m << "  Description: " << block->getDeviceDescription() << juce::newLine
+            << "  Serial: " << block->serialNumber << juce::newLine;
 
             if (auto bi = BlockImplementation<Detector>::getFrom (*block))
-                m << "  Short address: " << (int) bi->getDeviceIndex() << newLine;
+                m << "  Short address: " << (int) bi->getDeviceIndex() << juce::newLine;
 
-            m << "  Battery level: " + String (roundToInt (100.0f * block->getBatteryLevel())) + "%" << newLine
-            << "  Battery charging: " + String (block->isBatteryCharging() ? "y" : "n") << newLine
-            << "  Width: " << block->getWidth() << newLine
-            << "  Height: " << block->getHeight() << newLine
-            << "  Millimeters per unit: " << block->getMillimetersPerUnit() << newLine
-            << newLine;
+            m << "  Battery level: " + juce::String (juce::roundToInt (100.0f * block->getBatteryLevel())) + "%" << juce::newLine
+            << "  Battery charging: " + juce::String (block->isBatteryCharging() ? "y" : "n") << juce::newLine
+            << "  Width: " << block->getWidth() << juce::newLine
+            << "  Height: " << block->getHeight() << juce::newLine
+            << "  Millimeters per unit: " << block->getMillimetersPerUnit() << juce::newLine
+            << juce::newLine;
         }
 
         for (auto& connection : topology.connections)
@@ -733,12 +733,12 @@ private:
             << ":" << portToString (connection.connectionPortOnDevice1)
             << "  <->  "
             << idToSerialNum (topology, connection.device2)
-            << ":" << portToString (connection.connectionPortOnDevice2) << newLine;
+            << ":" << portToString (connection.connectionPortOnDevice2) << juce::newLine;
         }
 
-        m << "=============================================================================" << newLine;
+        m << "=============================================================================" << juce::newLine;
 
-        Logger::outputDebugString (m.toString());
+        juce::Logger::outputDebugString (m.toString());
     }
    #endif
 
