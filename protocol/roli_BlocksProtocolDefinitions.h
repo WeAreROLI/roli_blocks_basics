@@ -503,6 +503,7 @@ static constexpr const char* ledProgramLittleFootFunctions[] =
     "getControlChannel/i",
     "useMPEDuplicateFilter/vb",
     "getSensorValue/iii",
+    "isKeyPressed/bi",
     "handleTouchAsSeaboard/vi",
     "setPowerSavingEnabled/vb",
     "getLocalConfig/ii",
