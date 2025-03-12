@@ -36,7 +36,7 @@ struct BlockDataSheet
         if (serialNumber.isLoopBlock())         initialiseForControlBlockLoop();
         if (serialNumber.isDevCtrlBlock())      initialiseForControlBlockDeveloper();
         if (serialNumber.isTouchBlock())        initialiseForControlBlockTouch();
-        if (serialNumber.isSeaboardBlock())     initialiseForRoliPiano (Block::Type::roliPiano49);
+        if (serialNumber.isSeaboardBlock())     initialiseForSeaboardBlock();
         if (serialNumber.isLumiKeysBlock())     initialiseForRoliPiano (Block::Type::lumiKeysBlock);
         if (serialNumber.isRoliPiano49())       initialiseForRoliPiano (Block::Type::roliPiano49);
         if (serialNumber.isAirwave())           initialiseForAirwave();

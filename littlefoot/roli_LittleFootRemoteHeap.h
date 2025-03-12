@@ -116,7 +116,7 @@ struct LittleFootRemoteHeap
 
         if (juce::readLittleEndianBitsInBuffer (targetData, startBit, numBits) != value)
         {
-            JUCE_LOG_LITTLEFOOT_HEAP ("Set bits sync " << String (startBit) << " " << String (numBits) << String (value));
+            JUCE_LOG_LITTLEFOOT_HEAP ("Set bits sync " << startBit << " " << numBits << value);
 
             juce::writeLittleEndianBitsInBuffer (targetData, startBit, numBits, value);
 
@@ -198,7 +198,7 @@ struct LittleFootRemoteHeap
             return;
 
         JUCE_LOG_LITTLEFOOT_HEAP ("ACK " << (int) packetIndex << "   device " << (int) bi.getDeviceIndex()
-                                  << ", last packet received " << String (lastPacketIndexReceived));
+                                  << ", last packet received " << juce::String (lastPacketIndexReceived));
 
         lastPacketIndexReceived = packetIndex;
 
@@ -307,9 +307,9 @@ private:
 
         double proportionOK = ((int) blockSize - differences) / (double) blockSize;
 
-        ignoreUnused (proportionOK);
+        juce::ignoreUnused (proportionOK);
 
-        JUCE_LOG_LITTLEFOOT_HEAP ("Heap: " << areas << "  " << String (roundToInt (100 * proportionOK))
+        JUCE_LOG_LITTLEFOOT_HEAP ("Heap: " << areas << "  " << juce::roundToInt (100 * proportionOK)
                                      << "%  " << (isProgramLoaded() ? "Ready" : "Loading"));
        #endif
     }
