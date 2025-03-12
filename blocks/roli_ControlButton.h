@@ -82,7 +82,12 @@ public:
         liftSensitivity,     /**< The lift sensitivity button on a touch block.     */
         fixedVelocity,       /**< The fixed velocity button on a touch block.       */
         glideLock,           /**< The glide lock button on a touch block.           */
-        pianoMode            /**< The piano mode button on a touch block.           */
+        pianoMode,            /**< The piano mode button on a touch block.           */
+
+        //piano49
+        next,
+        previous,
+        bluetooth,
     };
 
     /** Returns the button's type. */

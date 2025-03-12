@@ -36,7 +36,7 @@ struct BlockDataSheet
         if (serialNumber.isLoopBlock())         initialiseForControlBlockLoop();
         if (serialNumber.isDevCtrlBlock())      initialiseForControlBlockDeveloper();
         if (serialNumber.isTouchBlock())        initialiseForControlBlockTouch();
-        if (serialNumber.isSeaboardBlock())     initialiseForSeaboardBlock();
+        if (serialNumber.isSeaboardBlock())     initialiseForRoliPiano (Block::Type::roliPiano49);
         if (serialNumber.isLumiKeysBlock())     initialiseForRoliPiano (Block::Type::lumiKeysBlock);
         if (serialNumber.isRoliPiano49())       initialiseForRoliPiano (Block::Type::roliPiano49);
         if (serialNumber.isAirwave())           initialiseForAirwave();
@@ -259,15 +259,24 @@ private:
         lightGridWidth = 0;
         lightGridHeight = 0;
 
-        addButtons (ControlButton::ButtonFunction::mode, 0.2f, 0.2f,
-                    ControlButton::ButtonFunction::down, 0.6f, 0.2f,
-                    ControlButton::ButtonFunction::up, 1.0f, 0.2f);
-
         if (blockType == Block::Type::lumiKeysBlock)
         {
+            addButtons (ControlButton::ButtonFunction::mode, 0.2f, 0.2f,
+                        ControlButton::ButtonFunction::down, 0.6f, 0.2f,
+                        ControlButton::ButtonFunction::up, 1.0f, 0.2f);
+
             addPortsSW (Block::ConnectionPort::DeviceEdge::west, 2);
             addPortsNE (Block::ConnectionPort::DeviceEdge::north, 4);
             addPortsNE (Block::ConnectionPort::DeviceEdge::east, 2);
+        }
+        else
+        {
+            addButtons (ControlButton::ButtonFunction::mode, 0.2f, 0.2f,
+                        ControlButton::ButtonFunction::down, 1.0f, 0.2f,
+                        ControlButton::ButtonFunction::up, 1.4f, 0.2f,
+                        ControlButton::ButtonFunction::previous, 1.8f, 0.2f,
+                        ControlButton::ButtonFunction::next, 2.2f, 0.2f,
+                        ControlButton::ButtonFunction::bluetooth, 0.6f, 0.2f);
         }
 
         hasTouchSurface = true;
@@ -312,8 +321,8 @@ private:
         apiType = Block::airwave;
         
         description = "ROLI Airwave";
-        widthUnits  = 1;
-        heightUnits = 3;
+        widthUnits  = 3;
+        heightUnits = 4;
         
         hasTouchSurface = false;
         hasBattery = false;
