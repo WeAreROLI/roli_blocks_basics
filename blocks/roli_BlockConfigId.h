@@ -67,13 +67,10 @@ enum BlockConfigId
     globalKeyColour     = 34,
     rootKeyColour       = 35,
     brightness          = 36,
-    // Airwave
-    hostAndInstrumentBattery  = 42,
-    airwaveBattery    = 43,
-    airwaveCharging   = 44,
-    sidePanelStatus     = 45,
-    jackAudioOutMode    = 46,
+    // Pedal
     pedalCC             = 47,
+    pedalType           = 48,
+    pedalModel          = 49,
     // 5D Limit Config
     velocityMin         = 50,
     velocityMax         = 51,

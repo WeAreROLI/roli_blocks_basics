@@ -67,7 +67,7 @@ struct BlockConfigManager
     void setDeviceIndex (TopologyIndex newDeviceIndex)                       { deviceIndex = newDeviceIndex; }
     void setDeviceComms (PhysicalTopologySource::DeviceConnection* newConn)  { deviceConnection = newConn; }
 
-    static constexpr juce::uint32 numConfigItems = 112;
+    static constexpr juce::uint32 numConfigItems = 109;
 
     static constexpr const char* midiSettingsGroup = "MIDI Settings";
     static constexpr const char* pitchGroup = "Pitch";
@@ -75,7 +75,7 @@ struct BlockConfigManager
     static constexpr const char* sensitivityGroup = "Sensitivity";
     static constexpr const char* rhythmGroup = "Rhythm";
     static constexpr const char* coloursGroup = "Colors";
-    static constexpr const char* airwaveGroup = "Airwave";
+    static constexpr const char* pedalGroup = "Pedal";
     static constexpr const char* mode0Group = "Mode 1";
     static constexpr const char* mode1Group = "Mode 2";
     static constexpr const char* mode2Group = "Mode 3";
@@ -146,16 +146,22 @@ struct BlockConfigManager
         { gammaCorrection,      0,         0,         1,    false,  "Gamma Correction",     ConfigType::boolean,    {},             coloursGroup },
         { globalKeyColour, INT32_MIN, INT32_MIN, INT32_MAX, false,  "Global Key Color",     ConfigType::colour,     {},             coloursGroup },
         { rootKeyColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color"  ,     ConfigType::colour,     {},             coloursGroup },
-        { brightness,           100,    0,    100,          false,  "Brightness",           ConfigType::integer,    {},             coloursGroup },
+        { brightness,         100,         0,       100,    false,  "Brightness",           ConfigType::integer,    {},             coloursGroup },
 
-        { hostAndInstrumentBattery, 0,0,    100,            false,  "Host and Instrument Battery", ConfigType::integer,    {},      airwaveGroup },
-        { airwaveBattery,     0,    0,    100,            false,  "Smart Case Battery",   ConfigType::integer,    {},             airwaveGroup },
-        { airwaveCharging,    0,    1,    1,              false,  "Smart Case Charging",  ConfigType::integer,    {},             airwaveGroup },
-        { sidePanelStatus,      0,    1,    1,              false,  "Side Panel Status",    ConfigType::integer,    {},             airwaveGroup },
+        { pedalType,            0,         0,         1,    false,  "Pedal Type", ConfigType::options, { "Sustain", "Expression" },  pedalGroup },
 
-        { jackAudioOutMode,     0,    0,    1,              false,  "Audio Output Level",   ConfigType::options, { "Headphone",
-                                                                                                                    "Line out" },   midiSettingsGroup },
-        { pedalCC,              64,    0,    127,           false,  "Pedal Control Change", ConfigType::integer,    {},             midiSettingsGroup },
+        { pedalModel,           0,         0,        12,    false,  "Pedal Model",ConfigType::options, { "Default",
+                                                                                                         "Moog EP-3",
+                                                                                                         "Boss FV-500-L",
+                                                                                                         "Boss EV-30",
+                                                                                                         "M-Audio EX-P",
+                                                                                                         "Roland EV-5",
+                                                                                                         "Behringer FCV100",
+                                                                                                         "Yamaha FC-7",
+                                                                                                         "Korg XVP-20",
+                                                                                                         "Yamaha FC 3A",
+                                                                                                         "Roland DP-10 " }, pedalGroup },
+        { pedalCC,              64,    0,    127,           false,  "Pedal Control Change", ConfigType::integer,    {}, pedalGroup },
         
         // These can be defined for unique usage for a given Littlefoot script
         { user0,                0,    0,      127,          false,  {},                     ConfigType::integer,    {},               {} },
