@@ -96,6 +96,9 @@ public:
     /** Whether device has a battery */
     bool hasBattery { true };
 
+    std::optional<juce::String> bootloaderVersion;
+    std::optional<int> tpsVersion;
+
     ProgramPersistency programPersistency { ProgramPersistency::setAsTemp };
 
     //==============================================================================
