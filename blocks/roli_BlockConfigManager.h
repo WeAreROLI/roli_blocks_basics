@@ -203,8 +203,6 @@ struct BlockConfigManager
         { mode0_pitchEnable,    0,    0,      1,            false,  "Enable Pitch Bend",    ConfigType::boolean,    {},               mode0Group },
         { mode0_pressureEnable, 0,    0,      1,            false,  "Enable Pressure",      ConfigType::boolean,    {},               mode0Group },
         { mode0_showScale,      0,    0,      1,            false,  "Show Scales",          ConfigType::boolean,    {},               mode0Group },
-        { mode0_globalColour, INT32_MIN, INT32_MIN, INT32_MAX, false,  "Global Key Color",  ConfigType::colour,     {},               mode0Group },
-        { mode0_rootColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color",    ConfigType::colour,     {},               mode0Group },
 
         { mode1_colorType,      0,    0,      4,            false,  "Color Scheme",         ConfigType::options,    {"Pro", "User", "Piano", "Stage",
                                                                                                                      "Rainbow"},      mode1Group },
@@ -213,8 +211,6 @@ struct BlockConfigManager
         { mode1_pitchEnable,    0,    0,      1,            false,  "Enable Pitch Bend",    ConfigType::boolean,    {},               mode1Group },
         { mode1_pressureEnable, 0,    0,      1,            false,  "Enable Pressure",      ConfigType::boolean,    {},               mode1Group },
         { mode1_showScale,      0,    0,      1,            false,  "Show Scales",          ConfigType::boolean,    {},               mode1Group },
-        { mode1_globalColour, INT32_MIN, INT32_MIN, INT32_MAX, false,  "Global Key Color",  ConfigType::colour,     {},               mode1Group },
-        { mode1_rootColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color",    ConfigType::colour,     {},               mode1Group },
 
         { mode2_colorType,      0,    0,      4,            false,  "Color Scheme",         ConfigType::options,    {"Pro", "User", "Piano", "Stage",
                                                                                                                      "Rainbow"},      mode2Group },
@@ -223,8 +219,6 @@ struct BlockConfigManager
         { mode2_pitchEnable,    0,    0,      1,            false,  "Enable Pitch Bend",    ConfigType::boolean,    {},               mode2Group },
         { mode2_pressureEnable, 0,    0,      1,            false,  "Enable Pressure",      ConfigType::boolean,    {},               mode2Group },
         { mode2_showScale,      0,    0,      1,            false,  "Show Scales",          ConfigType::boolean,    {},               mode2Group },
-        { mode2_globalColour, INT32_MIN, INT32_MIN, INT32_MAX, false,  "Global Key Color",  ConfigType::colour,     {},               mode2Group },
-        { mode2_rootColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color",    ConfigType::colour,     {},               mode2Group },
 
         { mode3_colorType,      0,    0,      4,            false,  "Color Scheme",         ConfigType::options,    {"Pro", "User", "Piano", "Stage",
                                                                                                                      "Rainbow"},      mode3Group },
@@ -233,8 +227,6 @@ struct BlockConfigManager
         { mode3_pitchEnable,    0,    0,      1,            false,  "Enable Pitch Bend",    ConfigType::boolean,    {},               mode3Group },
         { mode3_pressureEnable, 0,    0,      1,            false,  "Enable Pressure",      ConfigType::boolean,    {},               mode3Group },
         { mode3_showScale,      0,    0,      1,            false,  "Show Scales",          ConfigType::boolean,    {},               mode3Group },
-        { mode3_globalColour, INT32_MIN, INT32_MIN, INT32_MAX, false,  "Global Key Color",  ConfigType::colour,     {},               mode3Group },
-        { mode3_rootColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color",    ConfigType::colour,     {},               mode3Group },
         { midiPortForwarding,       0,    0,      1,        false,  "MIDI Port Forwarding", ConfigType::boolean,    {},               midiSettingsGroup },
         { midiPortThrottling,       0,    0,      3,        false,  "MIDI Port Throttling", ConfigType::options,    { "Off", "Half", "Quarter", "Note On/Off" },        
                                                                                                                                       midiSettingsGroup },

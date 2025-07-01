@@ -122,32 +122,24 @@ enum BlockConfigId
     mode0_pitchEnable   = 102,
     mode0_pressureEnable = 103,
     mode0_showScale     = 104,
-    mode0_globalColour  = 105,
-    mode0_rootColour    = 106,
     // Mode Config 1
     mode1_colorType     = 107,
     mode1_midiMode      = 108,
     mode1_pitchEnable   = 109,
     mode1_pressureEnable = 110,
     mode1_showScale     = 111,
-    mode1_globalColour  = 112,
-    mode1_rootColour    = 113,
     // Mode Config 2
     mode2_colorType     = 114,
     mode2_midiMode      = 115,
     mode2_pitchEnable   = 116,
     mode2_pressureEnable = 117,
     mode2_showScale     = 118,
-    mode2_globalColour  = 119,
-    mode2_rootColour    = 120,
     // Mode Config 3
     mode3_colorType     = 121,
     mode3_midiMode      = 122,
     mode3_pitchEnable   = 123,
     mode3_pressureEnable = 124,
     mode3_showScale     = 125,
-    mode3_globalColour  = 126,
-    mode3_rootColour    = 127,
     numConfigItems
 };
 } // namespace juce
