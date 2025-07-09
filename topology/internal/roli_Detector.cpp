@@ -433,12 +433,18 @@ private:
 
     void timerCallback() override
     {
-        startTimer (1500);
 
         auto detectedDevices = deviceDetector.scanForDevices();
 
-        handleDevicesRemoved (detectedDevices);
-        handleDevicesAdded (detectedDevices);
+        juce::StringArray removedDevices;
+
+        handleDevicesRemoved (detectedDevices, removedDevices);
+
+        //prevent issue on windows when re-opening device that has just been closed
+        if (removedDevices.size() == 0)
+            handleDevicesAdded (detectedDevices);
+
+        startTimer (750);
     }
 
     bool containsBlockWithUID (const Block::Array& blocks, Block::UID uid)
@@ -450,11 +456,19 @@ private:
         return false;
     }
 
-    void handleDevicesRemoved (const juce::StringArray& detectedDevices)
+    void handleDevicesRemoved (const juce::StringArray& detectedDevices, 
+                               juce::StringArray& removedDevices)
     {
         for (int i = connectedDeviceGroups.size(); --i >= 0;)
-            if (! connectedDeviceGroups.getUnchecked(i)->isStillConnected (detectedDevices))
+        {
+            const auto& group = connectedDeviceGroups.getUnchecked(i);
+
+            if (! group->isStillConnected (detectedDevices))
+            {
+                removedDevices.add (group->deviceName);
                 connectedDeviceGroups.remove (i);
+            }
+        }
     }
 
     void handleDevicesAdded (const juce::StringArray& detectedDevices)
