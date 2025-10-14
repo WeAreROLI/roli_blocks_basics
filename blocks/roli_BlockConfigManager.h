@@ -67,7 +67,7 @@ struct BlockConfigManager
     void setDeviceIndex (TopologyIndex newDeviceIndex)                       { deviceIndex = newDeviceIndex; }
     void setDeviceComms (PhysicalTopologySource::DeviceConnection* newConn)  { deviceConnection = newConn; }
 
-    static constexpr juce::uint32 numConfigItems = 109;
+    static constexpr juce::uint32 numDefaultConfigItems = 101;
 
     static constexpr const char* midiSettingsGroup = "MIDI Settings";
     static constexpr const char* pitchGroup = "Pitch";
@@ -81,7 +81,7 @@ struct BlockConfigManager
     static constexpr const char* mode2Group = "Mode 3";
     static constexpr const char* mode3Group = "Mode 4";
 
-    const ConfigDescription defaultConfig[numConfigItems] =
+    static constexpr ConfigDescription defaultConfig[numDefaultConfigItems] =
     {
         { midiStartChannel,     2,      1,      16,         false,  "MIDI Start Channel",   ConfigType::integer,    {},               midiSettingsGroup },
         { midiEndChannel,       16,     1,      16,         false,  "MIDI End Channel",     ConfigType::integer,    {},               midiSettingsGroup },
