@@ -37,7 +37,10 @@ struct BlockDataSheet
         if (serialNumber.isDevCtrlBlock())      initialiseForControlBlockDeveloper();
         if (serialNumber.isTouchBlock())        initialiseForControlBlockTouch();
         if (serialNumber.isSeaboardBlock())     initialiseForSeaboardBlock();
-        if (serialNumber.isLumiKeysBlock())     initialiseForLumiKeysBlock();
+        if (serialNumber.isLumiKeysBlock())     initialiseForRoliPiano (Block::Type::lumiKeysBlock);
+        if (serialNumber.isRoliPiano49())       initialiseForRoliPiano (Block::Type::roliPiano49);
+        if (serialNumber.isAirwave())           initialiseForAirwave();
+        if (serialNumber.isLightpadProBlock())  initialiseForLightpadProBlock();
     }
 
     Block::ConnectionPort convertPortIndexToConnectorPort (BlocksProtocol::ConnectorPort port) const noexcept
@@ -55,6 +58,8 @@ struct BlockDataSheet
     int lightGridWidth = 0, lightGridHeight = 0, lightGridStartIndex = 0;
 
     bool hasTouchSurface = false;
+    bool hasBattery = true;
+
     int numKeywaves = 0;
 
     int numLEDRowLEDs = 0;
@@ -97,6 +102,26 @@ private:
 
         hasTouchSurface = true;
         programAndHeapSize = BlocksProtocol::padBlockProgramAndHeapSize;
+
+        addModeButton();
+    }
+
+    void initialiseForLightpadProBlock()
+    {
+        apiType = Block::Type::lightpadProBlock;
+
+        description = "Lightpad Pro BLOCK (4x4)";
+
+        widthUnits = 4;
+        heightUnits = 4;
+
+        lightGridWidth = 31;
+        lightGridHeight = 31;
+
+        addPorts (4, 4, 4, 4);
+
+        hasTouchSurface = true;
+        programAndHeapSize = BlocksProtocol::lightpadProBlockProgramAndHeapSize;
 
         addModeButton();
     }
@@ -224,26 +249,35 @@ private:
         addModeButton();
     }
 
-    void initialiseForLumiKeysBlock()
+    void initialiseForRoliPiano (Block::Type blockType)
     {
-        apiType = Block::Type::lumiKeysBlock;
-
-        description = "LUMI Keys BLOCK (6x3)";
-
-        widthUnits = 6;
-        heightUnits = 3;
-
+        apiType = blockType;
+        description = blockType == Block::Type::lumiKeysBlock ? "ROLI Piano M (6x3)" : "ROLI Piano (14x4)";
+        numKeywaves = blockType == Block::Type::lumiKeysBlock ? 24 : 49;
+        widthUnits  = blockType == Block::Type::lumiKeysBlock ? 6 : 14;
+        heightUnits = blockType == Block::Type::lumiKeysBlock ? 3 : 4;
         lightGridWidth = 0;
         lightGridHeight = 0;
-        numKeywaves = 24;
 
-        addButtons (ControlButton::ButtonFunction::mode, 0.2f, 0.2f,
-                    ControlButton::ButtonFunction::down, 0.6f, 0.2f,
-                    ControlButton::ButtonFunction::up, 1.0f, 0.2f);
+        if (blockType == Block::Type::lumiKeysBlock)
+        {
+            addButtons (ControlButton::ButtonFunction::mode, 0.2f, 0.2f,
+                        ControlButton::ButtonFunction::down, 0.6f, 0.2f,
+                        ControlButton::ButtonFunction::up, 1.0f, 0.2f);
 
-        addPortsSW (Block::ConnectionPort::DeviceEdge::west, 2);
-        addPortsNE (Block::ConnectionPort::DeviceEdge::north, 4);
-        addPortsNE (Block::ConnectionPort::DeviceEdge::east, 2);
+            addPortsSW (Block::ConnectionPort::DeviceEdge::west, 2);
+            addPortsNE (Block::ConnectionPort::DeviceEdge::north, 4);
+            addPortsNE (Block::ConnectionPort::DeviceEdge::east, 2);
+        }
+        else
+        {
+            addButtons (ControlButton::ButtonFunction::mode, 0.2f, 0.2f,
+                        ControlButton::ButtonFunction::down, 1.0f, 0.2f,
+                        ControlButton::ButtonFunction::up, 1.4f, 0.2f,
+                        ControlButton::ButtonFunction::previous, 1.8f, 0.2f,
+                        ControlButton::ButtonFunction::next, 2.2f, 0.2f,
+                        ControlButton::ButtonFunction::bluetooth, 0.6f, 0.2f);
+        }
 
         hasTouchSurface = true;
         programAndHeapSize = BlocksProtocol::padBlockProgramAndHeapSize;
@@ -282,6 +316,19 @@ private:
                                "G#", "A", "A#", "B"}, keyBedGroup });
     }
 
+    void initialiseForAirwave()
+    {
+        apiType = Block::airwave;
+        
+        description = "ROLI Airwave";
+        widthUnits  = 3;
+        heightUnits = 4;
+        
+        hasTouchSurface = false;
+        hasBattery = false;
+        programAndHeapSize = 0;
+    }
+    
     //==============================================================================
     void addStatusLED (const char* name, float x, float y)
     {

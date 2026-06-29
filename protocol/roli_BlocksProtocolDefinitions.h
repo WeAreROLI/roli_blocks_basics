@@ -183,7 +183,7 @@ struct BlockSerialNumber : public BlockStringData<16>
             if (c == 0)
                 return false;
 
-        return isAnyControlBlock() || isPadBlock() || isSeaboardBlock() || isLumiKeysBlock();
+        return isAnyControlBlock() || isPadBlock() || isSeaboardBlock() || isLumiKeysBlock() || isLightpadProBlock() || isRoliPiano49() || isAirwave();
     }
 
     bool isPadBlock() const noexcept            { return hasPrefix ("LPB") || hasPrefix ("LPM"); }
@@ -193,6 +193,9 @@ struct BlockSerialNumber : public BlockStringData<16>
     bool isTouchBlock() const noexcept          { return hasPrefix ("TCB"); }
     bool isSeaboardBlock() const noexcept       { return hasPrefix ("SBB"); }
     bool isLumiKeysBlock() const noexcept       { return hasPrefix ("LKB"); }
+    bool isRoliPiano49() const noexcept         { return hasPrefix ("RP4"); }
+    bool isLightpadProBlock() const noexcept    { return hasPrefix ("LPX"); }
+    bool isAirwave() const noexcept             { return hasPrefix ("AW1"); }
 
     bool isAnyControlBlock() const noexcept     { return isLiveBlock() || isLoopBlock() || isDevCtrlBlock() || isTouchBlock(); }
 
@@ -387,6 +390,9 @@ static constexpr juce::uint32 apiModeHostPingTimeoutMs = 5000;
 static constexpr juce::uint32 padBlockProgramAndHeapSize = 7200;
 static constexpr juce::uint32 padBlockStackSize = 800;
 
+static constexpr juce::uint32 lightpadProBlockProgramAndHeapSize = 16384;
+static constexpr juce::uint32 lightpadProBlockStackSize = 2048;
+
 static constexpr juce::uint32 controlBlockProgramAndHeapSize = 3000;
 static constexpr juce::uint32 controlBlockStackSize = 800;
 
@@ -497,6 +503,7 @@ static constexpr const char* ledProgramLittleFootFunctions[] =
     "getControlChannel/i",
     "useMPEDuplicateFilter/vb",
     "getSensorValue/iii",
+    "isKeyPressed/bi",
     "handleTouchAsSeaboard/vi",
     "setPowerSavingEnabled/vb",
     "getLocalConfig/ii",
@@ -522,7 +529,10 @@ static constexpr const char* ledProgramLittleFootFunctions[] =
     "padControllerDrawPad/vi",
     "setUseDefaultKeyHandler/vb",
     "setUseDefaultKeyHandler/vbb",
+    "localHasMIDIOutPort/b",
 
+    "setLED/viii",
+    "blendLED/viii",
     nullptr
 };
 

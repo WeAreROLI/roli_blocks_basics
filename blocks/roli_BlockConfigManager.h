@@ -67,7 +67,7 @@ struct BlockConfigManager
     void setDeviceIndex (TopologyIndex newDeviceIndex)                       { deviceIndex = newDeviceIndex; }
     void setDeviceComms (PhysicalTopologySource::DeviceConnection* newConn)  { deviceConnection = newConn; }
 
-    static constexpr juce::uint32 numConfigItems = 97;
+    static constexpr juce::uint32 numDefaultConfigItems = 101;
 
     static constexpr const char* midiSettingsGroup = "MIDI Settings";
     static constexpr const char* pitchGroup = "Pitch";
@@ -75,12 +75,13 @@ struct BlockConfigManager
     static constexpr const char* sensitivityGroup = "Sensitivity";
     static constexpr const char* rhythmGroup = "Rhythm";
     static constexpr const char* coloursGroup = "Colors";
+    static constexpr const char* pedalGroup = "Pedal";
     static constexpr const char* mode0Group = "Mode 1";
     static constexpr const char* mode1Group = "Mode 2";
     static constexpr const char* mode2Group = "Mode 3";
     static constexpr const char* mode3Group = "Mode 4";
 
-    const ConfigDescription defaultConfig[numConfigItems] =
+    static constexpr ConfigDescription defaultConfig[numDefaultConfigItems] =
     {
         { midiStartChannel,     2,      1,      16,         false,  "MIDI Start Channel",   ConfigType::integer,    {},               midiSettingsGroup },
         { midiEndChannel,       16,     1,      16,         false,  "MIDI End Channel",     ConfigType::integer,    {},               midiSettingsGroup },
@@ -105,6 +106,12 @@ struct BlockConfigManager
         { liftSensitivity,      100,    0,      127,        false,  "Lift Sensitivity",     ConfigType::integer,    {},               sensitivityGroup },
         { fixedVelocity,        0,      0,      1,          false,  "Fixed Velocity",       ConfigType::boolean,    {},               sensitivityGroup },
         { fixedVelocityValue,   127,    1,      127,        false,  "Fixed Velocity Value", ConfigType::integer,    {},               sensitivityGroup },
+        { velocityMin,          1,      1,      127,        false,  "Strike Minimum",       ConfigType::integer,    {},               sensitivityGroup },
+        { velocityMax,          127,    1,      127,        false,  "Strike Maximum",       ConfigType::integer,    {},               sensitivityGroup },
+        { pressMin,             0,      0,      127,        false,  "Press Minimum",        ConfigType::integer,    {},               sensitivityGroup },
+        { pressMax,             127,    0,      127,        false,  "Press Maximum",        ConfigType::integer,    {},               sensitivityGroup },
+        { liftMin,              0,      0,      127,        false,  "Lift Minimum",         ConfigType::integer,    {},               sensitivityGroup },
+        { liftMax,              127,    0,      127,        false,  "Lift Maximum",         ConfigType::integer,    {},               sensitivityGroup },
         { pianoMode,            0,      0,      1,          false,  "Piano Mode",           ConfigType::boolean,    {},               playGroup },
         { glideLock,            0,      0,      127,        false,  "Glide Rate",           ConfigType::integer,    {},               playGroup },
         { glideLockEnable,      0,      0,      1,          false,  "Glide Lock Enable",    ConfigType::boolean,    {},               playGroup },
@@ -120,27 +127,42 @@ struct BlockConfigManager
                                                                                                                   "G#", "A", "A#", "B"}, playGroup },
         { autoTransposeToKey,   0,      0,      1,          false,  "Auto Transpose To Key",ConfigType::boolean,    {},               pitchGroup },
         { xTrackingMode,        1,      1,      4,          false,  "Glide Tracking",  ConfigType::options,    { "Multi-Channel",
-                                                                                                                  "Last Played",
-                                                                                                                  "Highest",
-                                                                                                                  "Lowest",
-                                                                                                                  "Disabled" },   playGroup },
+                                                                                                                 "Last Played",
+                                                                                                                 "Highest",
+                                                                                                                 "Lowest",
+                                                                                                                 "Disabled" },   playGroup },
         { yTrackingMode,        1,      1,      4,          false,  "Slide Tracking",  ConfigType::options,    { "Multi-Channel",
-                                                                                                                  "Last Played",
-                                                                                                                  "Highest",
-                                                                                                                  "Lowest",
-                                                                                                                  "Disabled" },   playGroup },
-        { zTrackingMode,        1,      0,      4,          false,  "Pressure Tracking", ConfigType::options, { "Poly Aftertouch",
-                                                                                                                  "Last Played",
-                                                                                                                  "Highest",
-                                                                                                                  "Lowest",
-                                                                                                                  "Disabled",
-                                                                                                                  "Hardest" },    playGroup },
+                                                                                                                 "Last Played",
+                                                                                                                 "Highest",
+                                                                                                                 "Lowest",
+                                                                                                                 "Disabled" },   playGroup },
+        { zTrackingMode,        1,      0,      4,          false,  "Pressure Tracking", ConfigType::options,  { "Poly Aftertouch",
+                                                                                                                 "Last Played",
+                                                                                                                 "Highest",
+                                                                                                                 "Lowest",
+                                                                                                                 "Disabled",
+                                                                                                                 "Hardest" },    playGroup },
 
         { gammaCorrection,      0,         0,         1,    false,  "Gamma Correction",     ConfigType::boolean,    {},             coloursGroup },
         { globalKeyColour, INT32_MIN, INT32_MIN, INT32_MAX, false,  "Global Key Color",     ConfigType::colour,     {},             coloursGroup },
         { rootKeyColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color"  ,     ConfigType::colour,     {},             coloursGroup },
-        { brightness,           100,    0,    100,          false,  "Brightness",           ConfigType::integer,    {},             coloursGroup },
+        { brightness,         100,         0,       100,    false,  "Brightness",           ConfigType::integer,    {},             coloursGroup },
 
+        { pedalType,            0,         0,         1,    false,  "Pedal Type", ConfigType::options, { "Sustain", "Expression" },  pedalGroup },
+
+        { pedalModel,           0,         0,        12,    false,  "Pedal Model",ConfigType::options, { "Default",
+                                                                                                         "Moog EP-3",
+                                                                                                         "Boss FV-500-L",
+                                                                                                         "Boss EV-30",
+                                                                                                         "M-Audio EX-P",
+                                                                                                         "Roland EV-5",
+                                                                                                         "Behringer FCV100",
+                                                                                                         "Yamaha FC-7",
+                                                                                                         "Korg XVP-20",
+                                                                                                         "Yamaha FC 3A",
+                                                                                                         "Roland DP-10 " }, pedalGroup },
+        { pedalCC,              64,    0,    127,           false,  "Pedal Control Change", ConfigType::integer,    {}, pedalGroup },
+        
         // These can be defined for unique usage for a given Littlefoot script
         { user0,                0,    0,      127,          false,  {},                     ConfigType::integer,    {},               {} },
         { user1,                0,    0,      127,          false,  {},                     ConfigType::integer,    {},               {} },
@@ -181,8 +203,6 @@ struct BlockConfigManager
         { mode0_pitchEnable,    0,    0,      1,            false,  "Enable Pitch Bend",    ConfigType::boolean,    {},               mode0Group },
         { mode0_pressureEnable, 0,    0,      1,            false,  "Enable Pressure",      ConfigType::boolean,    {},               mode0Group },
         { mode0_showScale,      0,    0,      1,            false,  "Show Scales",          ConfigType::boolean,    {},               mode0Group },
-        { mode0_globalColour, INT32_MIN, INT32_MIN, INT32_MAX, false,  "Global Key Color",  ConfigType::colour,     {},               mode0Group },
-        { mode0_rootColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color",    ConfigType::colour,     {},               mode0Group },
 
         { mode1_colorType,      0,    0,      4,            false,  "Color Scheme",         ConfigType::options,    {"Pro", "User", "Piano", "Stage",
                                                                                                                      "Rainbow"},      mode1Group },
@@ -191,8 +211,6 @@ struct BlockConfigManager
         { mode1_pitchEnable,    0,    0,      1,            false,  "Enable Pitch Bend",    ConfigType::boolean,    {},               mode1Group },
         { mode1_pressureEnable, 0,    0,      1,            false,  "Enable Pressure",      ConfigType::boolean,    {},               mode1Group },
         { mode1_showScale,      0,    0,      1,            false,  "Show Scales",          ConfigType::boolean,    {},               mode1Group },
-        { mode1_globalColour, INT32_MIN, INT32_MIN, INT32_MAX, false,  "Global Key Color",  ConfigType::colour,     {},               mode1Group },
-        { mode1_rootColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color",    ConfigType::colour,     {},               mode1Group },
 
         { mode2_colorType,      0,    0,      4,            false,  "Color Scheme",         ConfigType::options,    {"Pro", "User", "Piano", "Stage",
                                                                                                                      "Rainbow"},      mode2Group },
@@ -201,8 +219,6 @@ struct BlockConfigManager
         { mode2_pitchEnable,    0,    0,      1,            false,  "Enable Pitch Bend",    ConfigType::boolean,    {},               mode2Group },
         { mode2_pressureEnable, 0,    0,      1,            false,  "Enable Pressure",      ConfigType::boolean,    {},               mode2Group },
         { mode2_showScale,      0,    0,      1,            false,  "Show Scales",          ConfigType::boolean,    {},               mode2Group },
-        { mode2_globalColour, INT32_MIN, INT32_MIN, INT32_MAX, false,  "Global Key Color",  ConfigType::colour,     {},               mode2Group },
-        { mode2_rootColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color",    ConfigType::colour,     {},               mode2Group },
 
         { mode3_colorType,      0,    0,      4,            false,  "Color Scheme",         ConfigType::options,    {"Pro", "User", "Piano", "Stage",
                                                                                                                      "Rainbow"},      mode3Group },
@@ -211,8 +227,11 @@ struct BlockConfigManager
         { mode3_pitchEnable,    0,    0,      1,            false,  "Enable Pitch Bend",    ConfigType::boolean,    {},               mode3Group },
         { mode3_pressureEnable, 0,    0,      1,            false,  "Enable Pressure",      ConfigType::boolean,    {},               mode3Group },
         { mode3_showScale,      0,    0,      1,            false,  "Show Scales",          ConfigType::boolean,    {},               mode3Group },
-        { mode3_globalColour, INT32_MIN, INT32_MIN, INT32_MAX, false,  "Global Key Color",  ConfigType::colour,     {},               mode3Group },
-        { mode3_rootColour,   INT32_MIN, INT32_MIN, INT32_MAX, false,  "Root Key Color",    ConfigType::colour,     {},               mode3Group }
+        { midiPortForwarding,       0,    0,      1,        false,  "MIDI Port Forwarding", ConfigType::boolean,    {},               midiSettingsGroup },
+        { midiPortThrottling,       0,    0,      3,        false,  "MIDI Port Throttling", ConfigType::options,    { "Off", "Half", "Quarter", "Note On/Off" },        
+                                                                                                                                      midiSettingsGroup },
+        { modeButtonAction,         0,    0,      1,        false,  "Side-Button",          ConfigType::options,    { "Preset only", "Preset and MIDI Mode"},
+                                                                                                                                      playGroup }
     };
 
     //==============================================================================

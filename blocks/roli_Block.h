@@ -45,7 +45,18 @@ public:
         developerControlBlock, /**< Developer control block type. */
         touchBlock,            /**< Touch control block type.     */
         seaboardBlock,         /**< Seaboard block type.          */
-        lumiKeysBlock          /**< LUMI Keys block type          */
+        lumiKeysBlock,         /**< LUMI Keys block type          */
+        lightpadProBlock,      /**< Lightpad Pro block type       */
+        airwave,               /**< Airwave type                  */
+        roliPiano49            /**< ROLI Piano 49 type            */
+    };
+
+
+    enum BatteryStatus
+    {
+        low,
+        medium,
+        high
     };
 
     /** Determines whether set program will be a temporary or default script saved to flash
@@ -68,6 +79,9 @@ public:
     /** The Block's version number */
     juce::String versionNumber;
 
+    /** The Block's model variant */
+    juce::String modelVariant;
+
     /** The Block's name */
     juce::String name;
 
@@ -78,6 +92,12 @@ public:
         This will be globally unique, and remains constant for a particular device.
     */
     const UID uid;
+
+    /** Whether device has a battery */
+    bool hasBattery { true };
+
+    std::optional<juce::String> bootloaderVersion;
+    std::optional<int> tpsVersion;
 
     ProgramPersistency programPersistency { ProgramPersistency::setAsTemp };
 
@@ -107,6 +127,16 @@ public:
 
     /** Returns true if the battery is charging. */
     virtual bool isBatteryCharging() const = 0;
+
+    static inline BatteryStatus getBatteryStatus (float batteryLevel)
+    {
+        if (batteryLevel < 0.2f)
+            return BatteryStatus::low;
+        else if (batteryLevel < 0.88f)
+            return BatteryStatus::medium;
+
+        return BatteryStatus::high;
+    }
 
     //==============================================================================
     /** Returns true if this block is connected and active. */

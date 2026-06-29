@@ -7,7 +7,7 @@
    purpose with or without fee is hereby granted, provided that the above
    copyright notice and this permission notice appear in all copies.
 
-   THE SOFTWARE IS PROVIDED ìAS ISî AND ROLI LTD DISCLAIMS ALL WARRANTIES WITH
+   THE SOFTWARE IS PROVIDED ‚ÄúAS IS‚Äù AND ROLI LTD DISCLAIMS ALL WARRANTIES WITH
    REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
    AND FITNESS. IN NO EVENT SHALL ROLI LTD BE LIABLE FOR ANY SPECIAL, DIRECT,
    INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
@@ -67,6 +67,22 @@ enum BlockConfigId
     globalKeyColour     = 34,
     rootKeyColour       = 35,
     brightness          = 36,
+    // Pedal
+    pedalCC             = 47,
+    pedalType           = 48,
+    pedalModel          = 49,
+    // 5D Limit Config
+    velocityMin         = 50,
+    velocityMax         = 51,
+    pressMin            = 52,
+    pressMax            = 53,
+    liftMin             = 54,
+    liftMax             = 55,
+    // MIDI Port Config
+    midiPortForwarding  = 56,
+    midiPortThrottling  = 57,
+    // Shift Button Behaviour
+    modeButtonAction    = 58,
     // User
     user0               = 64,
     user1               = 65,
@@ -106,32 +122,24 @@ enum BlockConfigId
     mode0_pitchEnable   = 102,
     mode0_pressureEnable = 103,
     mode0_showScale     = 104,
-    mode0_globalColour  = 105,
-    mode0_rootColour    = 106,
     // Mode Config 1
     mode1_colorType     = 107,
     mode1_midiMode      = 108,
     mode1_pitchEnable   = 109,
     mode1_pressureEnable = 110,
     mode1_showScale     = 111,
-    mode1_globalColour  = 112,
-    mode1_rootColour    = 113,
     // Mode Config 2
     mode2_colorType     = 114,
     mode2_midiMode      = 115,
     mode2_pitchEnable   = 116,
     mode2_pressureEnable = 117,
     mode2_showScale     = 118,
-    mode2_globalColour  = 119,
-    mode2_rootColour    = 120,
     // Mode Config 3
     mode3_colorType     = 121,
     mode3_midiMode      = 122,
     mode3_pitchEnable   = 123,
     mode3_pressureEnable = 124,
     mode3_showScale     = 125,
-    mode3_globalColour  = 126,
-    mode3_rootColour    = 127,
     numConfigItems
 };
 } // namespace juce

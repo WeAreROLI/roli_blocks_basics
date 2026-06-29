@@ -50,6 +50,9 @@ struct ConnectedDeviceGroup  : private juce::AsyncUpdater,
         if (shouldCheckMasterSerial())
             initialiseSerialReader();
 
+
+        LOG_CONNECTIVITY ("New Connected Device Group " << deviceName);
+
         startTimer (timerInterval);
         sendTopologyRequest();
     }
@@ -129,6 +132,8 @@ struct ConnectedDeviceGroup  : private juce::AsyncUpdater,
 
         updateCurrentDeviceList();
         updateCurrentDeviceConnections();
+
+        numTopologyRequestsSent = 0;
     }
 
     void handleVersion (BlocksProtocol::DeviceVersion version)
@@ -398,6 +403,7 @@ private:
 
     void sendTopologyRequest()
     {
+        LOG_CONNECTIVITY ("Sending topology request");
         ++numTopologyRequestsSent;
         lastTopologyRequestTime = juce::Time::getCurrentTime();
         sendCommandMessage (0, BlocksProtocol::requestTopologyMessage);
@@ -582,6 +588,8 @@ private:
 
     void forceApiDisconnected (Block::UID uid)
     {
+        LOG_CONNECTIVITY ("Forcing API disconnect " << uid);
+
         for (auto dependentUID : detector.getDnaDependentDeviceUIDs (uid))
             removeDevice (dependentUID);
 

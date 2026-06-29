@@ -61,6 +61,9 @@ public:
     /** Creates an empty version number **/
     BlocksVersion() = default;
 
+    /** Assigns a version number from another BlocksVersion */
+    BlocksVersion& operator= (const BlocksVersion& other) = default;
+
     /** Returns true if string format is valid */
     static bool isValidVersion (const juce::String& versionString);
 
